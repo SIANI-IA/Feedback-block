@@ -2,7 +2,7 @@ import tiktoken
 import torch
 
 from dataset import create_dataloader_v1
-from neural_modules.gpt import GPTModel
+from neural_modules.gpt import GPTModel, FeedbackGPT
 from trainer import LanguageModelTrainer
 from utils import plot_losses
 
@@ -20,7 +20,7 @@ SEED = 123
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.manual_seed(SEED)
-model = GPTModel(GPT_CONFIG_124M)
+model = FeedbackGPT(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
 
@@ -71,7 +71,7 @@ trainer = LanguageModelTrainer(
     start_context="The verdict was",
 )
 
-EPOCHS = 10
+EPOCHS = 15
 train_losses, val_losses, tokens_seen = trainer.train(EPOCHS, eval_freq=5, eval_iter=5)
 
 epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))
