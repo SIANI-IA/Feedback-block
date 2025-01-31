@@ -65,3 +65,57 @@ def plot_losses(epochs_seen, tokens_seen, train_losses, val_losses):
     fig.tight_layout()  # Adjust layout to make room
     plt.savefig("loss-plot.pdf")
     plt.show()
+
+def format_number(num):
+    """
+    Converts large numbers into a human-readable format.
+    Example: 
+      - 1,000,000 -> '1M'
+      - 1,000,000,000 -> '1B'
+    """
+    if num >= 1_000_000_000:
+        return f"{num / 1_000_000_000:.1f}B"
+    elif num >= 1_000_000:
+        return f"{num / 1_000_000:.1f}M"
+    elif num >= 1_000:
+        return f"{num / 1_000:.1f}K"
+    else:
+        return str(num)
+
+def count_parameters_per_module(model):
+    """
+    Prints the number of trainable parameters for each module in a PyTorch Lightning model.
+    Uses `format_number` to display numbers in a compact format.
+    """
+    for module_name, module in model.named_modules():
+        if len(list(module.children())) == 0:  # Ensures it's a leaf module
+            num_params = sum(p.numel() for p in module.parameters() if p.requires_grad)
+            print(f"Module '{module_name}' has {format_number(num_params)} trainable parameters.")
+
+def count_parameters(model):
+    """
+    Returns the total number of trainable parameters in a model,
+    formatted in a human-readable way.
+    """
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Model has {format_number(total_params)} trainable parameters.")
+
+
+def plot_histogram(histogram_of_chosen_blocks: dict):
+    # Extraer claves (capas) y valores (frecuencia de elección)
+    layers = list(histogram_of_chosen_blocks.keys())
+    counts = list(histogram_of_chosen_blocks.values())
+
+    # Graficar
+    plt.figure(figsize=(10, 5))
+    plt.bar(layers, counts, color='skyblue', edgecolor='black')
+    plt.xlabel("Layer Index")
+    plt.ylabel("Count")
+    plt.title("Histogram of Chosen Blocks")
+    plt.xticks(layers)  # Asegurar que se marquen todas las capas en el eje X
+    plt.grid(axis="y", linestyle="--", alpha=0.7)
+
+    # Mostrar el gráfico
+    plt.savefig("block-histogram.pdf")
+    plt.show()
+

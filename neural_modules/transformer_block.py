@@ -35,5 +35,4 @@ class TransformerBlock(nn.Module):
         x = self.ff(x)
         x = self.drop_shortcut(x)
         x = x + shortcut  # Add the original input back
-
         return x
