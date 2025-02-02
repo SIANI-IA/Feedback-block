@@ -90,7 +90,7 @@ class DynamicTransformer(nn.Module):
         ###############################
         initial_x = x
         for _ in range(self.n_iter):
-            probs_block = self.selector(x)
+            probs_block = self.selector(initial_x)
             choosen_block = torch.argmax(probs_block, dim=-1) # greedy selection
             self.histogram_of_chosen_blocks[choosen_block.item()] += 1
             x = self.trf_blocks[choosen_block](initial_x)
