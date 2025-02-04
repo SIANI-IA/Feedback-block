@@ -15,9 +15,11 @@ GPT_CONFIG_124M = {
     "n_layers": 12,        # Number of layers
     "drop_rate": 0.1,      # Dropout rate
     "qkv_bias": False,     # Query-key-value bias
-    "n_iter": 3,           # Number of iterations
-    "batch_size": 1,
+    "n_iter": 2,           # Number of iterations
+    "batch_size": 2,
+    "temperature": 2,
 }
+EPOCHS = 20
 SEED = 123
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -73,7 +75,6 @@ trainer = LanguageModelTrainer(
     start_context="The verdict was",
 )
 
-EPOCHS = 10
 train_losses, val_losses, tokens_seen = trainer.train(EPOCHS, eval_freq=5, eval_iter=5)
 
 epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))

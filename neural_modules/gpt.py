@@ -71,7 +71,8 @@ class DynamicTransformer(nn.Module):
             *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
         )
 
-        self.selector = BlockSelector(cfg["emb_dim"]*cfg["batch_size"], 512, cfg["n_layers"])
+        self.selector = BlockSelector(cfg["emb_dim"], 512, cfg["n_layers"], num_heads=4, temperature=cfg["temperature"])
+        self.temperature = cfg["temperature"]
 
         self.final_norm = LayerNorm(cfg["emb_dim"])
         self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
@@ -91,7 +92,10 @@ class DynamicTransformer(nn.Module):
         initial_x = x
         for _ in range(self.n_iter):
             probs_block = self.selector(initial_x)
-            choosen_block = torch.argmax(probs_block, dim=-1) # greedy selection
+            if self.temperature > 0.0:
+                choosen_block = torch.multinomial(probs_block, num_samples=1)
+            else:
+                choosen_block = torch.argmax(probs_block, dim=-1) # greedy selection
             self.histogram_of_chosen_blocks[choosen_block.item()] += 1
             x = self.trf_blocks[choosen_block](initial_x)
             initial_x = initial_x + x # memory connection
