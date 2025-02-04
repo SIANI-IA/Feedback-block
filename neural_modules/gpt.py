@@ -106,46 +106,4 @@ class DynamicTransformer(nn.Module):
         return logits
     
 class DynamicTransformer2(nn.Module):
-
-    def __init__(self, cfg):
-        super().__init__()
-        self.tok_emb = nn.Embedding(cfg["vocab_size"], cfg["emb_dim"])
-        self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
-        self.drop_emb = nn.Dropout(cfg["drop_rate"])
-
-        self.trf_blocks = nn.Sequential(
-            *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
-        )
-
-        self.selector = BlockSelector(cfg["emb_dim"], 512, cfg["n_layers"], num_heads=4, temperature=cfg["temperature"])
-        self.temperature = cfg["temperature"]
-
-        self.final_norm = LayerNorm(cfg["emb_dim"])
-        self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
-        self.n_iter = cfg["n_iter"]
-        self.histogram_of_chosen_blocks = {
-            i: 0
-            for i in range(cfg["n_layers"])
-        }
-
-    def forward(self, in_idx):
-        batch_size, seq_len = in_idx.shape
-        tok_embeds = self.tok_emb(in_idx)
-        pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
-        x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
-        x = self.drop_emb(x)
-        ###############################
-        initial_x = x
-        for _ in range(self.n_iter):
-            probs_block = self.selector(initial_x)
-            if self.temperature > 0.0:
-                choosen_block = torch.multinomial(probs_block, num_samples=1)
-            else:
-                choosen_block = torch.argmax(probs_block, dim=-1) # greedy selection
-            self.histogram_of_chosen_blocks[choosen_block.item()] += 1
-            x = self.trf_blocks[choosen_block](initial_x)
-            initial_x = initial_x + x # memory connection
-        ###############################
-        x = self.final_norm(x)
-        logits = self.out_head(x)
-        return logits
+    pass
