@@ -7,7 +7,7 @@ from utils import count_parameters
 
 
 if __name__ == "__main__":
-    GPT_CONFIG_124M = {
+    """GPT_CONFIG_124M = {
         "vocab_size": 50257,   # Vocabulary size
         "context_length": 256, # Shortened context length (orig: 1024)
         "emb_dim": 768,        # Embedding dimension
@@ -36,5 +36,15 @@ if __name__ == "__main__":
     x = pool(x)
     print(x.shape)
     x = x.view(1, -1)
-    print(x.shape)
+    print(x.shape)"""
+
+    import os
+    import urllib.request
+
+    if not os.path.exists("the-verdict.txt"):
+        url = ("https://raw.githubusercontent.com/rasbt/"
+            "LLMs-from-scratch/main/ch02/01_main-chapter-code/"
+            "the-verdict.txt")
+        file_path = "the-verdict.txt"
+        urllib.request.urlretrieve(url, file_path)
 
