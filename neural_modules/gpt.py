@@ -154,3 +154,13 @@ class DynamicTransformer2(DynamicTransformer):
         x = self.final_norm(x)
         logits = self.out_head(x)
         return logits
+    
+
+"""
+Dos tipos de conexiones en la recurrencia:
+
+1. Memory connection: x = x + f(x)
+
+2. Concatenation connection: x = f([x, x]); f: function MLP or linear layer
+
+"""
