@@ -2,7 +2,7 @@ import tiktoken
 import torch
 
 from dataset import create_dataloader_v1
-from neural_modules.gpt import GPTModel, FeedbackGPT, DynamicTransformer
+from neural_modules.gpt import *
 from trainer import LanguageModelTrainer
 from utils import plot_histogram, plot_losses
 
@@ -19,12 +19,12 @@ GPT_CONFIG_124M = {
     "batch_size": 2,
     "temperature": 2,
 }
-EPOCHS = 20
+EPOCHS = 10
 SEED = 123
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.manual_seed(SEED)
-model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = DynamicTransformer2(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
 
