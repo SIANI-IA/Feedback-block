@@ -3,19 +3,20 @@ import torch.nn as nn
 
 from neural_modules.feed_forward import FeedForward
 from neural_modules.layer_norm import LayerNorm
-from neural_modules.multi_head_attn import MultiHeadAttention
+from neural_modules.multi_head_attn import MultiHeadAttention, MHAPyTorchScaledDotProduct
 
 
 class TransformerBlock(nn.Module):
     def __init__(self, cfg):
         super().__init__()
-        self.att = MultiHeadAttention(
+        self.att = MHAPyTorchScaledDotProduct(
             d_in=cfg["emb_dim"],
             d_out=cfg["emb_dim"],
             context_length=cfg["context_length"],
             num_heads=cfg["n_heads"],
             dropout=cfg["drop_rate"],
-            qkv_bias=cfg["qkv_bias"])
+            qkv_bias=cfg["qkv_bias"]
+        )
         self.ff = FeedForward(cfg)
         self.norm1 = LayerNorm(cfg["emb_dim"])
         self.norm2 = LayerNorm(cfg["emb_dim"])
