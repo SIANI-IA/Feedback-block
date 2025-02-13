@@ -1,3 +1,4 @@
+import math
 import torch
 
 from utils import generate, text_to_token_ids, token_ids_to_text
@@ -41,19 +42,54 @@ class LanguageModelTrainer:
         self.model.train()
         return train_loss, val_loss
 
-    def train(self, num_epochs, eval_freq, eval_iter):
-        train_losses, val_losses, track_tokens_seen = [], [], []
+    def train(
+            self, 
+            num_epochs: int, 
+            eval_freq: int, 
+            eval_iter: int, 
+            warmup_steps: int, 
+            initial_lr: float = 3e-05, 
+            min_lr: float = 1e-6,
+            grad_clip: bool = False,
+        ):
+        
+        train_losses, val_losses, track_tokens_seen, track_lrs = [], [], [], []
         tokens_seen, global_step = 0, -1
+
+        # Retrieve the maximum learning rate from the optimizer
+        peak_lr = self.optimizer.param_groups[0]["lr"]
+
+        total_training_steps = len(self.train_loader) * num_epochs
+        lr_increment = (peak_lr - initial_lr) / warmup_steps
 
         for epoch in range(num_epochs):
             self.model.train()
             for input_batch, target_batch in self.train_loader:
                 self.optimizer.zero_grad()
+                global_step += 1
+                # Adjust the learning rate based on the current phase (warmup or cosine annealing)
+                if global_step < warmup_steps:
+                    # Linear warmup
+                    lr = initial_lr + global_step * lr_increment  
+                else:
+                    # Cosine annealing after warmup
+                    progress = ((global_step - warmup_steps) / 
+                                (total_training_steps - warmup_steps))
+                    lr = min_lr + (peak_lr - min_lr) * 0.5 * (1 + math.cos(math.pi * progress))
+
+                # Apply the calculated learning rate to the optimizer
+                for param_group in self.optimizer.param_groups:
+                    param_group["lr"] = lr
+                track_lrs.append(lr)  # Store the current learning rate
+
                 loss = self._calc_loss_batch(input_batch, target_batch)
                 loss.backward()
+
+                if grad_clip and global_step >= warmup_steps: # Gradient clipping is only applied after warmup
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+
                 self.optimizer.step()
                 tokens_seen += input_batch.numel()
-                global_step += 1
 
                 if global_step % eval_freq == 0:
                     train_loss, val_loss = self.evaluate(eval_iter)

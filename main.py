@@ -2,7 +2,7 @@ import tiktoken
 import torch
 
 from dataset import create_dataloader_v1
-from neural_modules.gpt import *
+from neural_modules.gpt import GPTModel, FeedbackGPT, FeedbackGPT_concant, DynamicTransformer, DynamicTransformer2
 from trainer import LanguageModelTrainer
 from utils import plot_histogram, plot_losses
 
@@ -19,14 +19,22 @@ GPT_CONFIG_124M = {
     "batch_size": 2,
     "temperature": 2,
 }
-EPOCHS = 10
+EPOCHS = 15
 SEED = 123
+peak_lr = 0.001
+weight_decay = 0.1
+example_sentence = "The verdict was"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.manual_seed(SEED)
-model = DynamicTransformer2(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
-optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
+
+optimizer = torch.optim.AdamW(
+        model.parameters(), 
+        lr=peak_lr, 
+        weight_decay=weight_decay
+    )
 
 file_path = "data/pretrain/the-verdict.txt"
 with open(file_path, "r", encoding="utf-8") as file:
@@ -72,10 +80,20 @@ trainer = LanguageModelTrainer(
     val_loader=val_loader,
     device=device,
     tokenizer=tokenizer,
-    start_context="The verdict was",
+    start_context=example_sentence,
 )
 
-train_losses, val_losses, tokens_seen = trainer.train(EPOCHS, eval_freq=5, eval_iter=5)
+total_steps = len(train_loader) * EPOCHS
+warmup_steps = int(0.2 * total_steps) # 20% warmup
+
+train_losses, val_losses, tokens_seen = trainer.train(
+        EPOCHS, 
+        eval_freq=5, 
+        eval_iter=1, 
+        warmup_steps=warmup_steps,
+        initial_lr=1e-5,
+        min_lr=1e-5
+)
 
 epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))
 plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
