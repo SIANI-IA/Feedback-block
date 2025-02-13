@@ -27,7 +27,7 @@ example_sentence = "The verdict was"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 torch.manual_seed(SEED)
-model = GPTModel(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 
 optimizer = torch.optim.AdamW(
@@ -86,7 +86,7 @@ trainer = LanguageModelTrainer(
 total_steps = len(train_loader) * EPOCHS
 warmup_steps = int(0.2 * total_steps) # 20% warmup
 
-train_losses, val_losses, tokens_seen = trainer.train(
+train_losses, val_losses, tokens_seen, ppl, track_lr = trainer.train(
         EPOCHS, 
         eval_freq=5, 
         eval_iter=1, 
@@ -96,5 +96,6 @@ train_losses, val_losses, tokens_seen = trainer.train(
 )
 
 epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))
+print("PPL:", ppl[-1])
 plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
 plot_histogram(model.histogram_of_chosen_blocks)

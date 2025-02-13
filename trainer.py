@@ -13,6 +13,9 @@ class LanguageModelTrainer:
         self.tokenizer = tokenizer
         self.start_context = start_context
 
+    def calculate_ppl(self, loss):
+        return math.exp(loss) if loss < 100 else float("inf") 
+
     def _calc_loss_batch(self, input_batch, target_batch):
         input_batch, target_batch = input_batch.to(self.device), target_batch.to(self.device)
         logits = self.model(input_batch)
@@ -40,7 +43,7 @@ class LanguageModelTrainer:
             train_loss = self._calc_loss_loader(self.train_loader, eval_iter)
             val_loss = self._calc_loss_loader(self.val_loader, eval_iter)
         self.model.train()
-        return train_loss, val_loss
+        return train_loss, val_loss, self.calculate_ppl(val_loss)
 
     def train(
             self, 
@@ -53,7 +56,7 @@ class LanguageModelTrainer:
             grad_clip: bool = False,
         ):
         
-        train_losses, val_losses, track_tokens_seen, track_lrs = [], [], [], []
+        train_losses, val_losses, track_ppl, track_tokens_seen, track_lrs = [], [], [], [], []
         tokens_seen, global_step = 0, -1
 
         # Retrieve the maximum learning rate from the optimizer
@@ -92,15 +95,16 @@ class LanguageModelTrainer:
                 tokens_seen += input_batch.numel()
 
                 if global_step % eval_freq == 0:
-                    train_loss, val_loss = self.evaluate(eval_iter)
+                    train_loss, val_loss, ppl_val = self.evaluate(eval_iter)
                     train_losses.append(train_loss)
                     val_losses.append(val_loss)
                     track_tokens_seen.append(tokens_seen)
+                    track_ppl.append(ppl_val)
                     print(f"Ep {epoch+1} (Step {global_step:06d}): Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
             
             self.generate_sample()
         
-        return train_losses, val_losses, track_tokens_seen
+        return train_losses, val_losses, track_tokens_seen, track_ppl, track_lrs
 
     def generate_sample(self):
         self.model.eval()
