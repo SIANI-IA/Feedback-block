@@ -38,7 +38,7 @@ if __name__ == "__main__":
     x = x.view(1, -1)
     print(x.shape)"""
 
-    import os
+    """import os
     import urllib.request
 
     if not os.path.exists("the-verdict.txt"):
@@ -46,5 +46,17 @@ if __name__ == "__main__":
             "LLMs-from-scratch/main/ch02/01_main-chapter-code/"
             "the-verdict.txt")
         file_path = "the-verdict.txt"
-        urllib.request.urlretrieve(url, file_path)
+        urllib.request.urlretrieve(url, file_path)"""
+    
+    torch.cuda.empty_cache()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    l = torch.nn.Linear(768, 768, bias=False).to(device)
+    l2 = torch.nn.Linear(768, 768, bias=False).to(device)
+    l3 = torch.nn.Linear(768, 768, bias=False).to(device)
+    l4 = l2.weight + l3.weight
+    # bytes to MB
+    memory_gpu = torch.cuda.max_memory_allocated() / 1024**2
+    print(count_parameters(l))
+    print(memory_gpu, "MB")
+
 

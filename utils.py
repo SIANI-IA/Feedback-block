@@ -118,4 +118,3 @@ def plot_histogram(histogram_of_chosen_blocks: dict):
     # Mostrar el gráfico
     plt.savefig("block-histogram.pdf")
     plt.show()
-

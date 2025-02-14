@@ -6,6 +6,8 @@ from neural_modules.gpt import GPTModel, FeedbackGPT, FeedbackGPT_concant, Dynam
 from trainer import LanguageModelTrainer
 from utils import plot_histogram, plot_losses
 
+import wandb
+
 
 GPT_CONFIG_124M = {
     "vocab_size": 50257,   # Vocabulary size
@@ -25,9 +27,12 @@ peak_lr = 0.001
 weight_decay = 0.1
 example_sentence = "The verdict was"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+use_wandb = True
+project_name = "test_feedback"
+run_name = "gpt"
 
 torch.manual_seed(SEED)
-model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = GPTModel(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 
 optimizer = torch.optim.AdamW(
@@ -81,6 +86,9 @@ trainer = LanguageModelTrainer(
     device=device,
     tokenizer=tokenizer,
     start_context=example_sentence,
+    use_wandb=use_wandb,
+    project_name=project_name,
+    run_name=run_name
 )
 
 total_steps = len(train_loader) * EPOCHS

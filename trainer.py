@@ -1,10 +1,23 @@
 import math
 import torch
+import wandb
 
 from utils import generate, text_to_token_ids, token_ids_to_text
 
 class LanguageModelTrainer:
-    def __init__(self, model, train_loader, val_loader, optimizer, device, tokenizer, start_context):
+    def __init__(
+            self, 
+            model, 
+            train_loader, 
+            val_loader, 
+            optimizer, 
+            device, 
+            tokenizer, 
+            start_context, 
+            use_wandb=False,
+            project_name=None,
+            run_name=None,
+        ):
         self.model = model.to(device)
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -12,6 +25,10 @@ class LanguageModelTrainer:
         self.device = device
         self.tokenizer = tokenizer
         self.start_context = start_context
+        self.use_wandb = use_wandb
+        if self.use_wandb:
+            assert project_name is not None and run_name is not None
+            wandb.init(project=project_name, name=run_name)
 
     def calculate_ppl(self, loss):
         return math.exp(loss) if loss < 100 else float("inf") 
@@ -65,6 +82,13 @@ class LanguageModelTrainer:
         total_training_steps = len(self.train_loader) * num_epochs
         lr_increment = (peak_lr - initial_lr) / warmup_steps
 
+        if self.use_wandb:
+            wandb.watch(self.model, log_freq=100)
+
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+        memory_fill_by_gpu = 0
+
         for epoch in range(num_epochs):
             self.model.train()
             for input_batch, target_batch in self.train_loader:
@@ -92,6 +116,7 @@ class LanguageModelTrainer:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
 
                 self.optimizer.step()
+                memory_fill_by_gpu = max(torch.cuda.max_memory_allocated() / 1024**2, memory_fill_by_gpu)
                 tokens_seen += input_batch.numel()
 
                 if global_step % eval_freq == 0:
@@ -100,9 +125,25 @@ class LanguageModelTrainer:
                     val_losses.append(val_loss)
                     track_tokens_seen.append(tokens_seen)
                     track_ppl.append(ppl_val)
-                    print(f"Ep {epoch+1} (Step {global_step:06d}): Train loss {train_loss:.3f}, Val loss {val_loss:.3f}")
+                    print(f"Ep {epoch+1} (Step {global_step:06d}): Train loss {train_loss:.3f}, Val loss {val_loss:.3f} , PPL {ppl_val:.2f}, LR {lr:.2e}")
+                    if self.use_wandb:
+                        wandb.log(
+                            {
+                                "epoch": epoch + 1, 
+                                "global_step": global_step,
+                                "train_loss": train_loss, 
+                                "val_loss": val_loss, 
+                                "ppl": ppl_val, 
+                                "lr": lr
+                            }
+                        )
             
             self.generate_sample()
+        
+        print(f"Max memory used by GPU: {memory_fill_by_gpu:.2f} MB")
+        wandb.log({"memory_gpu (MB)": memory_fill_by_gpu})
+        if self.use_wandb:
+            wandb.finish()
         
         return train_losses, val_losses, track_tokens_seen, track_ppl, track_lrs
 
