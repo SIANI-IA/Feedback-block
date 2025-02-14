@@ -4,9 +4,7 @@ import torch
 from dataset import create_dataloader_v1
 from neural_modules.gpt import GPTModel, FeedbackGPT, FeedbackGPT_concant, DynamicTransformer, DynamicTransformer2
 from trainer import LanguageModelTrainer
-from utils import plot_histogram, plot_losses
-
-import wandb
+from utils import plot_histogram, plot_losses, seed_everything
 
 
 GPT_CONFIG_124M = {
@@ -14,10 +12,10 @@ GPT_CONFIG_124M = {
     "context_length": 256, # Shortened context length (orig: 1024)
     "emb_dim": 768,        # Embedding dimension
     "n_heads": 12,         # Number of attention heads
-    "n_layers": 12,        # Number of layers
+    "n_layers": 5,        # Number of layers
     "drop_rate": 0.1,      # Dropout rate
     "qkv_bias": False,     # Query-key-value bias
-    "n_iter": 2,           # Number of iterations
+    "n_iter": 3,           # Number of iterations
     "batch_size": 2,
     "temperature": 2,
 }
@@ -31,8 +29,8 @@ use_wandb = True
 project_name = "test_feedback"
 run_name = "feed_2"
 
-torch.manual_seed(SEED)
-model = GPTModel(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+seed_everything(SEED)
+model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 
 optimizer = torch.optim.AdamW(
@@ -50,9 +48,6 @@ train_ratio = 0.90
 split_idx = int(train_ratio * len(text_data))
 train_data = text_data[:split_idx]
 val_data = text_data[split_idx:]
-
-
-torch.manual_seed(123)
 
 train_loader = create_dataloader_v1(
     train_data,

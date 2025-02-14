@@ -1,3 +1,5 @@
+import random
+import numpy as np
 import torch
 
 import matplotlib.pyplot as plt
@@ -118,3 +120,14 @@ def plot_histogram(histogram_of_chosen_blocks: dict):
     # Mostrar el gráfico
     plt.savefig("block-histogram.pdf")
     plt.show()
+
+def seed_everything(seed):
+    """
+    Set the random seed for reproducibility.
+    """
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+    random.seed(seed)

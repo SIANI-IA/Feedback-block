@@ -39,7 +39,7 @@ class LanguageModelTrainer:
         loss = torch.nn.functional.cross_entropy(logits.flatten(0, 1), target_batch.flatten())
         return loss
 
-    def _calc_loss_loader(self, data_loader, num_batches=None):
+    def _calc_loss_loader(self, data_loader: torch.nn, num_batches: int = None):
         total_loss = 0.0
         if len(data_loader) == 0:
             return float("nan")
@@ -54,7 +54,7 @@ class LanguageModelTrainer:
         
         return total_loss / num_batches
 
-    def evaluate(self, eval_iter):
+    def evaluate(self, eval_iter: int):
         self.model.eval()
         with torch.no_grad():
             train_loss = self._calc_loss_loader(self.train_loader, eval_iter)
@@ -84,9 +84,9 @@ class LanguageModelTrainer:
             initial_lr: float = 3e-05, 
             min_lr: float = 1e-6,
             grad_clip: bool = False,
-        ):
+        ) -> torch.nn.Module:
         
-        train_losses, val_losses, track_ppl, track_tokens_seen, track_lrs = [], [], [], [], []
+        track_lrs = []
         tokens_seen, global_step, last_tokens = 0, -1, 0
 
         # Retrieve the maximum learning rate from the optimizer
@@ -156,10 +156,7 @@ class LanguageModelTrainer:
                     avg_tps = cumulative_tokens / cumulative_time if cumulative_time > 0 else 0
                     # evaluate the model
                     train_loss, val_loss, ppl_val = self.evaluate(eval_iter)
-                    train_losses.append(train_loss)
-                    val_losses.append(val_loss)
-                    track_tokens_seen.append(tokens_seen)
-                    track_ppl.append(ppl_val)
+
                     print(
                         f"Ep {epoch+1} (Step {global_step:06d}): "
                         f"Train loss {train_loss:.3f}, "
@@ -206,4 +203,4 @@ class LanguageModelTrainer:
         if self.use_wandb:
             wandb.finish()
         
-        return train_losses, val_losses, track_tokens_seen, track_ppl, track_lrs
+        return self.model
