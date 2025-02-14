@@ -61,6 +61,19 @@ class LanguageModelTrainer:
             val_loss = self._calc_loss_loader(self.val_loader, eval_iter)
         self.model.train()
         return train_loss, val_loss, self.calculate_ppl(val_loss)
+    
+    def generate_sample(self):
+        self.model.eval()
+        context_size = self.model.pos_emb.weight.shape[0]
+        encoded = text_to_token_ids(self.start_context, self.tokenizer).to(self.device)
+        with torch.no_grad():
+            token_ids = generate(
+                model=self.model, idx=encoded,
+                max_new_tokens=50, context_size=context_size
+            )
+        decoded_text = token_ids_to_text(token_ids, self.tokenizer)
+        print(decoded_text.replace("\n", " "))
+        self.model.train()
 
     def train(
             self, 
@@ -74,7 +87,7 @@ class LanguageModelTrainer:
         ):
         
         train_losses, val_losses, track_ppl, track_tokens_seen, track_lrs = [], [], [], [], []
-        tokens_seen, global_step = 0, -1
+        tokens_seen, global_step, last_tokens = 0, -1, 0
 
         # Retrieve the maximum learning rate from the optimizer
         peak_lr = self.optimizer.param_groups[0]["lr"]
@@ -85,9 +98,14 @@ class LanguageModelTrainer:
         if self.use_wandb:
             wandb.watch(self.model, log_freq=100)
 
-        torch.cuda.empty_cache()
-        torch.cuda.reset_peak_memory_stats()
-        memory_fill_by_gpu = 0
+        # Variables for cumulative average tokens/sec
+        cumulative_tokens, cumulative_time = 0.0, 0.0
+
+        # CUDA-specific timing setup
+        t_start = torch.cuda.Event(enable_timing=True)
+        t_end = torch.cuda.Event(enable_timing=True)
+        torch.cuda.synchronize()  # Ensure all prior CUDA operations are done
+        t_start.record()          # Start the timer for the first interval
 
         for epoch in range(num_epochs):
             self.model.train()
@@ -116,16 +134,41 @@ class LanguageModelTrainer:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
 
                 self.optimizer.step()
-                memory_fill_by_gpu = max(torch.cuda.max_memory_allocated() / 1024**2, memory_fill_by_gpu)
                 tokens_seen += input_batch.numel()
 
                 if global_step % eval_freq == 0:
+                    # end timing for the current interval
+                    t_end.record()
+                    torch.cuda.synchronize()  # Wait for all CUDA ops to complete.
+                    elapsed = t_start.elapsed_time(t_end) / 1000  # Convert ms to seconds
+                    t_start.record()  # Reset timer for the next interval
+                    # Calculate tokens processed in this interval
+                    tokens_interval = tokens_seen - last_tokens
+                    last_tokens = tokens_seen
+                    tps = tokens_interval / elapsed if elapsed > 0 else 0  # Tokens per second
+
+                    # Update cumulative counters (skip the first evaluation interval)
+                    if global_step:  # This is False only when global_step == 0 (first evaluation)
+                        cumulative_tokens += tokens_interval
+                        cumulative_time += elapsed
+
+                    # Compute cumulative average tokens/sec (excluding the first interval)
+                    avg_tps = cumulative_tokens / cumulative_time if cumulative_time > 0 else 0
+                    # evaluate the model
                     train_loss, val_loss, ppl_val = self.evaluate(eval_iter)
                     train_losses.append(train_loss)
                     val_losses.append(val_loss)
                     track_tokens_seen.append(tokens_seen)
                     track_ppl.append(ppl_val)
-                    print(f"Ep {epoch+1} (Step {global_step:06d}): Train loss {train_loss:.3f}, Val loss {val_loss:.3f} , PPL {ppl_val:.2f}, LR {lr:.2e}")
+                    print(
+                        f"Ep {epoch+1} (Step {global_step:06d}): "
+                        f"Train loss {train_loss:.3f}, "
+                        f"Val loss {val_loss:.3f}, "
+                        f"PPL {ppl_val:.2f},"
+                        f"LR {lr:.2e}, "
+                        f"Tokens/sec {tps:.0f}, "
+                        f"Avg. tokens/sec {avg_tps:.0f}"
+                    )
                     if self.use_wandb:
                         wandb.log(
                             {
@@ -134,28 +177,33 @@ class LanguageModelTrainer:
                                 "train_loss": train_loss, 
                                 "val_loss": val_loss, 
                                 "ppl": ppl_val, 
-                                "lr": lr
+                                "lr": lr,
+                                "tokens_per_sec": tps,
+                                "avg_tokens_per_sec": avg_tps
                             }
                         )
             
             self.generate_sample()
+
+            # Memory stats
+            if torch.cuda.is_available():
+                device = torch.cuda.current_device()
+
+                allocated = torch.cuda.memory_allocated(device) / 1024**3  # Convert to GB
+                reserved = torch.cuda.memory_reserved(device) / 1024**3  # Convert to GB
+
+                print(f"\nAllocated memory: {allocated:.4f} GB")
+                print(f"Reserved memory: {reserved:.4f} GB\n")
+
+                if self.use_wandb:
+                    wandb.log(
+                        {
+                            "allocated_memory": allocated,
+                            "reserved_memory": reserved,
+                        }
+                    )
         
-        print(f"Max memory used by GPU: {memory_fill_by_gpu:.2f} MB")
-        wandb.log({"memory_gpu (MB)": memory_fill_by_gpu})
         if self.use_wandb:
             wandb.finish()
         
         return train_losses, val_losses, track_tokens_seen, track_ppl, track_lrs
-
-    def generate_sample(self):
-        self.model.eval()
-        context_size = self.model.pos_emb.weight.shape[0]
-        encoded = text_to_token_ids(self.start_context, self.tokenizer).to(self.device)
-        with torch.no_grad():
-            token_ids = generate(
-                model=self.model, idx=encoded,
-                max_new_tokens=50, context_size=context_size
-            )
-        decoded_text = token_ids_to_text(token_ids, self.tokenizer)
-        print(decoded_text.replace("\n", " "))
-        self.model.train()

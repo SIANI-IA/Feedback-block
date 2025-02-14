@@ -29,10 +29,10 @@ example_sentence = "The verdict was"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 use_wandb = True
 project_name = "test_feedback"
-run_name = "gpt_dynamic"
+run_name = "feed_2"
 
 torch.manual_seed(SEED)
-model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = GPTModel(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 
 optimizer = torch.optim.AdamW(
@@ -103,7 +103,7 @@ train_losses, val_losses, tokens_seen, ppl, track_lr = trainer.train(
         min_lr=1e-5
 )
 
-epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))
+"""epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))
 print("PPL:", ppl[-1])
 plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
-plot_histogram(model.histogram_of_chosen_blocks)
+plot_histogram(model.histogram_of_chosen_blocks)"""
