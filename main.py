@@ -29,10 +29,10 @@ example_sentence = "The verdict was"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 use_wandb = True
 project_name = "test_feedback"
-run_name = "gpt"
+run_name = "gpt_dynamic"
 
 torch.manual_seed(SEED)
-model = GPTModel(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
 model.to(device)
 
 optimizer = torch.optim.AdamW(
