@@ -39,7 +39,8 @@ optimizer = torch.optim.AdamW(
         weight_decay=weight_decay
     )
 
-file_path = "data/pretrain/the-verdict.txt"
+# TODO: extend this to use diferentes datasets
+file_path = "data/pretrain/the-verdict.txt" #TODO: trasnform this to tiny dataset
 with open(file_path, "r", encoding="utf-8") as file:
         text_data = file.read()
 
@@ -89,7 +90,7 @@ trainer = LanguageModelTrainer(
 total_steps = len(train_loader) * EPOCHS
 warmup_steps = int(0.2 * total_steps) # 20% warmup
 
-train_losses, val_losses, tokens_seen, ppl, track_lr = trainer.train(
+model_trained = trainer.train(
         EPOCHS, 
         eval_freq=5, 
         eval_iter=1, 
@@ -98,7 +99,4 @@ train_losses, val_losses, tokens_seen, ppl, track_lr = trainer.train(
         min_lr=1e-5
 )
 
-"""epochs_tensor = torch.linspace(0, EPOCHS, len(train_losses))
-print("PPL:", ppl[-1])
-plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
-plot_histogram(model.histogram_of_chosen_blocks)"""
+#TODO: Save the model

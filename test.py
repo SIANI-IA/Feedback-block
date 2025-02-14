@@ -48,15 +48,14 @@ if __name__ == "__main__":
         file_path = "the-verdict.txt"
         urllib.request.urlretrieve(url, file_path)"""
     
-    torch.cuda.empty_cache()
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    l = torch.nn.Linear(768, 768, bias=False).to(device)
-    l2 = torch.nn.Linear(768, 768, bias=False).to(device)
-    l3 = torch.nn.Linear(768, 768, bias=False).to(device)
-    l4 = l2.weight + l3.weight
-    # bytes to MB
-    memory_gpu = torch.cuda.max_memory_allocated() / 1024**2
-    print(count_parameters(l))
-    print(memory_gpu, "MB")
+    from datasets import load_from_disk
+
+    dataset = load_from_disk("data/pretrain/wikitext-2")
+
+    print(len("".join(dataset["train"]["text"][:])))
+
+    print(dataset)
+
+
 
 
