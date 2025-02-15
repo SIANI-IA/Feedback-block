@@ -2,7 +2,7 @@ import math
 import torch
 import wandb
 
-from utils import generate, text_to_token_ids, token_ids_to_text
+from utils import generate, transform_big_integers_to_human_reable, text_to_token_ids, token_ids_to_text
 
 class LanguageModelTrainer:
     def __init__(
@@ -161,10 +161,11 @@ class LanguageModelTrainer:
                         f"Ep {epoch+1} (Step {global_step:06d}): "
                         f"Train loss {train_loss:.3f}, "
                         f"Val loss {val_loss:.3f}, "
-                        f"PPL {ppl_val:.2f},"
-                        f"LR {lr:.2e}, "
+                        f"ppl {ppl_val:.2f}, "
+                        f"lr {lr:.2e}, "
                         f"Tokens/sec {tps:.0f}, "
-                        f"Avg. tokens/sec {avg_tps:.0f}"
+                        f"Avg. tokens/sec {avg_tps:.0f}, "
+                        f"Tokens seen {transform_big_integers_to_human_reable(tokens_seen)} "
                     )
                     if self.use_wandb:
                         wandb.log(
@@ -176,7 +177,8 @@ class LanguageModelTrainer:
                                 "ppl": ppl_val, 
                                 "lr": lr,
                                 "tokens_per_sec": tps,
-                                "avg_tokens_per_sec": avg_tps
+                                "avg_tokens_per_sec": avg_tps,
+                                "tokens_seen": tokens_seen,
                             }
                         )
             

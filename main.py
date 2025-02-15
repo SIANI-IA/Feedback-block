@@ -1,36 +1,47 @@
 import tiktoken
 import torch
 
-from dataset import create_dataloader_v1
+from dataset import create_dataloader
 from neural_modules.gpt import GPTModel, FeedbackGPT, FeedbackGPT_concant, DynamicTransformer, DynamicTransformer2
 from trainer import LanguageModelTrainer
 from utils import plot_histogram, plot_losses, seed_everything
+from dataset_splitter.dataset_splitter import TxtDatasetSplitter, WikiDatasetSplitter
 
+
+DATASETS = {
+    "tiny": TxtDatasetSplitter("data/pretrain/the-verdict.txt"),
+    "wikitext-2": WikiDatasetSplitter("data/pretrain/wikitext-2"),
+    "wikitext-103": WikiDatasetSplitter("data/pretrain/wikitext-103"),
+}
 
 GPT_CONFIG_124M = {
     "vocab_size": 50257,   # Vocabulary size
     "context_length": 256, # Shortened context length (orig: 1024)
     "emb_dim": 768,        # Embedding dimension
     "n_heads": 12,         # Number of attention heads
-    "n_layers": 5,        # Number of layers
+    "n_layers": 12,        # Number of layers
     "drop_rate": 0.1,      # Dropout rate
     "qkv_bias": False,     # Query-key-value bias
     "n_iter": 3,           # Number of iterations
-    "batch_size": 2,
-    "temperature": 2,
+    "batch_size": 2,       # Batch size
+    "temperature": 2,      # Temperature for selector module
 }
-EPOCHS = 15
+EPOCHS = 3
 SEED = 123
+
+dataset_name = "tiny"
+tokenizer_name = "gpt2"
 peak_lr = 0.001
 weight_decay = 0.1
 example_sentence = "The verdict was"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-use_wandb = True
+use_wandb = False
 project_name = "test_feedback"
 run_name = "feed_2"
+num_workers = 5
 
 seed_everything(SEED)
-model = DynamicTransformer(GPT_CONFIG_124M) #GPTModel(GPT_CONFIG_124M)
+model = GPTModel(GPT_CONFIG_124M)
 model.to(device)
 
 optimizer = torch.optim.AdamW(
@@ -39,37 +50,30 @@ optimizer = torch.optim.AdamW(
         weight_decay=weight_decay
     )
 
-# TODO: extend this to use diferentes datasets
-file_path = "data/pretrain/the-verdict.txt" #TODO: trasnform this to tiny dataset
-with open(file_path, "r", encoding="utf-8") as file:
-        text_data = file.read()
+dataset = DATASETS[dataset_name]
+train_data = dataset.get_train_data()
+val_data = dataset.get_val_data()
 
-# Train/validation ratio
-train_ratio = 0.90
-split_idx = int(train_ratio * len(text_data))
-train_data = text_data[:split_idx]
-val_data = text_data[split_idx:]
-
-train_loader = create_dataloader_v1(
+train_loader = create_dataloader(
     train_data,
     batch_size=GPT_CONFIG_124M["batch_size"],
     max_length=GPT_CONFIG_124M["context_length"],
     stride=GPT_CONFIG_124M["context_length"],
     drop_last=True,
     shuffle=True,
-    num_workers=0
+    num_workers=num_workers
 )
 
-val_loader = create_dataloader_v1(
+val_loader = create_dataloader(
     val_data,
     batch_size=GPT_CONFIG_124M["batch_size"],
     max_length=GPT_CONFIG_124M["context_length"],
     stride=GPT_CONFIG_124M["context_length"],
     drop_last=False,
     shuffle=False,
-    num_workers=0
+    num_workers=num_workers
 )
-tokenizer = tiktoken.get_encoding("gpt2")
+tokenizer = tiktoken.get_encoding(tokenizer_name)
 
 print("Training data size:", len(train_loader))
 print("Validation data size:", len(val_loader))

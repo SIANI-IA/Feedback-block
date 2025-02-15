@@ -131,3 +131,16 @@ def seed_everything(seed):
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
     random.seed(seed)
+
+def transform_big_integers_to_human_reable(number: int) -> str:
+    """
+    Print large integers in a human-readable format.
+    """
+    if number >= 1_000_000_000:
+        return f"{number / 1_000_000_000:.2f}B"
+    elif number >= 1_000_000:
+        return f"{number / 1_000_000:.2f}M"
+    elif number >= 1_000:
+        return f"{number / 1_000:.2f}K"
+    else:
+        return number
