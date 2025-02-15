@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # Dataset
-dataset_name=wikitext-2
+dataset_name=wikitext-103
 context_length=256
 vocab_size=50257
 
 # transformer architecture
-transformer_type="select" # gpt | loop | select
+transformer_type="gpt" # gpt | loop | select
 emb_dim=768
 n_heads=12
-n_layers=3
+n_layers=12
 drop_rate=0.1
 ## Feedback hyperparameters
 n_iter=3

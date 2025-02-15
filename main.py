@@ -72,6 +72,7 @@ def parse_args():
     if args.transformer_type == "loop":
         args.run_name += f"{args.n_iter}iter_"
     if args.transformer_type == "select":
+        args.run_name += f"{args.n_iter}iter_"
         args.run_name += f"{args.select_dim}sel_dim_" + \
         f"{args.select_heads}sel_heads_" + \
         f"{args.temperature}temp_"
