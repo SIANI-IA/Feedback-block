@@ -27,6 +27,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from neural_modules.multi_head_attn import MHAPyTorchScaledDotProduct
+
 class BlockSelector(nn.Module):
     def __init__(self, input_dim: int, hidden_dim: int, output_dim: int, num_heads: int = 4, temperature: float = 0.0):
         super().__init__()

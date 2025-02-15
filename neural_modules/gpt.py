@@ -32,7 +32,7 @@ class GPTModel(nn.Module):
         logits = self.out_head(x)
         return logits
     
-class FeedbackGPT(nn.Module):
+class LoopTransformer(nn.Module):
 
     def __init__(self, cfg):
         super().__init__()
@@ -60,7 +60,7 @@ class FeedbackGPT(nn.Module):
         logits = self.out_head(x)
         return logits
 
-class FeedbackGPT_concant(FeedbackGPT):
+class FeedbackGPT_concant(LoopTransformer):
 
     def __init__(self, cfg):
         super().__init__(cfg)
@@ -81,7 +81,7 @@ class FeedbackGPT_concant(FeedbackGPT):
         logits = self.out_head(x)
         return logits
     
-class DynamicTransformer(nn.Module):
+class SFTFormer(nn.Module):
 
     def __init__(self, cfg):
         super().__init__()
@@ -93,7 +93,13 @@ class DynamicTransformer(nn.Module):
             *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
         )
 
-        self.selector = BlockSelector(cfg["emb_dim"], 512, cfg["n_layers"], num_heads=4, temperature=cfg["temperature"])
+        self.selector = BlockSelector(
+            cfg["emb_dim"], 
+            cfg["select_dim"], 
+            cfg["n_layers"], 
+            num_heads=cfg["select_heads"], 
+            temperature=cfg["temperature"]
+        )
         self.temperature = cfg["temperature"]
 
         self.final_norm = LayerNorm(cfg["emb_dim"])
@@ -126,7 +132,7 @@ class DynamicTransformer(nn.Module):
         logits = self.out_head(x)
         return logits
     
-class DynamicTransformer2(DynamicTransformer):
+class DynamicTransformer2(SFTFormer):
     
     def __init__(self, cfg):
         super().__init__(cfg)
