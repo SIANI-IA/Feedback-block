@@ -6,7 +6,7 @@ context_length=256
 vocab_size=50257
 
 # transformer architecture
-transformer_type="gpt"
+transformer_type="gpt" # gpt | loop | select
 emb_dim=768
 n_heads=12
 n_layers=12

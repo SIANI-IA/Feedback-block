@@ -6,10 +6,11 @@ from distutils.util import strtobool
 import os
 
 from dataset import create_dataloader
+from dataset_splitter.TxtDatasetSplitter import TxtDatasetSplitter
 from neural_modules.gpt import GPTModel, LoopTransformer, SFTFormer
 from trainer import LanguageModelTrainer
 from utils import get_timestamp, seed_everything
-from dataset_splitter.dataset_splitter import TxtDatasetSplitter, WikiDatasetSplitter
+from dataset_splitter.WikiDatasetSplitter import WikiDatasetSplitter
 
 
 DATASETS = {
