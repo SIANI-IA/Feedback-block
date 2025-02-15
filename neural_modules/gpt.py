@@ -44,7 +44,7 @@ class LoopTransformer(nn.Module):
 
         self.final_norm = LayerNorm(cfg["emb_dim"])
         self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
-        self.n_iter = cfg["n_layers"]
+        self.n_iter = cfg["n_iter"]
 
     def forward(self, in_idx):
         batch_size, seq_len = in_idx.shape
