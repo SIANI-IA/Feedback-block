@@ -19,10 +19,10 @@ select_heads=4
 temperature=2
 
 # training hyperparameters
-epochs=3
+epochs=1
 peak_lr=0.001
 weight_decay=0.1
-batch_size=2
+batch_size=4
 use_wandb=False
 folder_to_save="checkpoints"
 num_workers=5
