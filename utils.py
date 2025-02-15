@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import torch
+from datetime import datetime
 
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -144,3 +145,8 @@ def transform_big_integers_to_human_reable(number: int) -> str:
         return f"{number / 1_000:.2f}K"
     else:
         return number
+    
+
+def get_timestamp():
+    now = datetime.now()
+    return now.strftime("%Y-%m-%d-%H-%M-%S")
