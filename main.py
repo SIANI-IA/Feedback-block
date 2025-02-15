@@ -86,7 +86,7 @@ args = parse_args()
 assert args.transformer_type in MODELS, f"Invalid transformer type: {args.transformer_type}"
 assert args.dataset_name in DATASETS, f"Invalid dataset name: {args.dataset_name}"
 assert args.num_workers >= 0, "Number of workers must be non-negative"
-assert 0 <= args.warmup_portion <= 1, "Warmup portion must be between 0 and 1"
+assert 0 < args.warmup_portion <= 1, "Warmup portion must be between 0 and 1"
 
 seed_everything(args.seed)
 config = vars(args)

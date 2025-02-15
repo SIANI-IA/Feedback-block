@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dataset
-dataset_name="tiny"
+dataset_name=wikitext-2
 context_length=256
 vocab_size=50257
 
@@ -12,11 +12,11 @@ n_heads=12
 n_layers=12
 drop_rate=0.1
 ## Feedback hyperparameters
-n_iter=3
+n_iter=1
 ## SFTransformer hyperparameters
-select_dim=512
-select_heads=4
-temperature=2
+select_dim=1
+select_heads=1
+temperature=1
 
 # training hyperparameters
 epochs=1
@@ -25,8 +25,7 @@ weight_decay=0.1
 batch_size=4
 use_wandb=False
 folder_to_save="checkpoints"
-num_workers=5
-warmup_portion=0.2
+num_workers=0
 eval_freq=5
 eval_iter=1
 
@@ -50,6 +49,5 @@ python3 main.py \
     --use_wandb $use_wandb \
     --folder_to_save $folder_to_save \
     --num_workers $num_workers \
-    --warmup_portion $warmup_portion \
     --eval_freq $eval_freq \
     --eval_iter $eval_iter
