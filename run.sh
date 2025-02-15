@@ -6,17 +6,17 @@ context_length=256
 vocab_size=50257
 
 # transformer architecture
-transformer_type="gpt" # gpt | loop | select
+transformer_type="select" # gpt | loop | select
 emb_dim=768
 n_heads=12
-n_layers=12
+n_layers=3
 drop_rate=0.1
 ## Feedback hyperparameters
-n_iter=1
+n_iter=3
 ## SFTransformer hyperparameters
-select_dim=1
-select_heads=1
-temperature=1
+select_dim=512
+select_heads=4
+temperature=2
 
 # training hyperparameters
 epochs=1
