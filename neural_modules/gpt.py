@@ -59,6 +59,32 @@ class LoopTransformer(nn.Module):
         x = self.final_norm(x) 
         logits = self.out_head(x)
         return logits
+    
+class LoopTransformer_concant(LoopTransformer):
+    
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.emb = cfg["emb_dim"]
+        print("CONCATENATION CONNECTION")
+        self.projection = nn.Linear(cfg["emb_dim"]*2, cfg["emb_dim"], bias=False)
+
+    def forward(self, in_idx):
+        batch_size, seq_len = in_idx.shape
+        tok_embeds = self.tok_emb(in_idx)
+        pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
+        x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
+        x = self.drop_emb(x)
+        x0 = x
+        for idx in range(self.n_iter):
+            if idx == 0:
+                initial_x = torch.randn(batch_size, seq_len, self.emb, device=in_idx.device)
+            x = torch.cat([x0, initial_x], dim=-1)
+            x = self.projection(x)
+            initial_x = self.trf_blocks(x)
+
+        x = self.final_norm(initial_x)
+        logits = self.out_head(x)
+        return logits
 
 class FeedbackGPT_concant(LoopTransformer):
 

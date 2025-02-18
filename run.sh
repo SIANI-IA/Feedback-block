@@ -1,31 +1,31 @@
 #!/bin/bash
 
 # Dataset
-dataset_name=wikitext-103
+dataset_name=tiny
 context_length=256
 vocab_size=50257
 
 # transformer architecture
-transformer_type="loop" # gpt | loop | select
+transformer_type="loop_concat" # gpt | loop | select | loop_concat
 emb_dim=768
 n_heads=12
 n_layers=1
 drop_rate=0.1
 ## Feedback hyperparameters
-n_iter=3
+n_iter=12
 ## SFTransformer hyperparameters
 select_dim=512
 select_heads=4
 temperature=0
 
 # training hyperparameters
-epochs=1
+epochs=5
 peak_lr=0.001
 weight_decay=0.1
 batch_size=4
-use_wandb=True
+use_wandb=False
 folder_to_save="checkpoints"
-cosine_annealing=True
+cosine_annealing=False
 num_workers=0
 eval_freq=5
 eval_iter=1

@@ -7,7 +7,7 @@ import os
 
 from dataset import create_dataloader
 from dataset_splitter.TxtDatasetSplitter import TxtDatasetSplitter
-from neural_modules.gpt import GPTModel, LoopTransformer, SFTFormer
+from neural_modules.gpt import GPTModel, LoopTransformer, SFTFormer, LoopTransformer_concant
 from trainer import LanguageModelTrainer
 from utils import get_timestamp, seed_everything
 from dataset_splitter.WikiDatasetSplitter import WikiDatasetSplitter
@@ -22,6 +22,7 @@ DATASETS = {
 MODELS = {
     "gpt": GPTModel,
     "loop": LoopTransformer,
+    "loop_concat": LoopTransformer_concant,
     "select": SFTFormer,
 }
 
