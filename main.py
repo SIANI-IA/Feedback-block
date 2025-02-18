@@ -59,6 +59,7 @@ def parse_args():
     parser.add_argument("--warmup_portion", type=float, default=0.2)
     parser.add_argument("--eval_freq", type=int, default=5)
     parser.add_argument("--eval_iter", type=int, default=1)
+    parser.add_argument("--cosine_annealing", type=lambda x: bool(strtobool(x)), default=True)
     args = parser.parse_args()
     args.project_name = f"language-modeling-{args.dataset_name}"
     time_now = get_timestamp()
@@ -151,7 +152,8 @@ model_trained = trainer.train(
     eval_iter=args.eval_iter, 
     warmup_steps=warmup_steps,
     initial_lr=args.initial_lr,
-    min_lr=args.min_lr
+    min_lr=args.min_lr,
+    cosine_annealing=args.cosine_annealing
 )
 
 # Save the model

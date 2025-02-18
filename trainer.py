@@ -84,16 +84,18 @@ class LanguageModelTrainer:
             initial_lr: float = 3e-05, 
             min_lr: float = 1e-6,
             grad_clip: bool = False,
+            cosine_annealing: bool = True,
         ) -> torch.nn.Module:
         
-        track_lrs = []
         tokens_seen, global_step, last_tokens = 0, -1, 0
 
         # Retrieve the maximum learning rate from the optimizer
         peak_lr = self.optimizer.param_groups[0]["lr"]
-
-        total_training_steps = len(self.train_loader) * num_epochs
-        lr_increment = (peak_lr - initial_lr) / warmup_steps
+        if cosine_annealing:
+            total_training_steps = len(self.train_loader) * num_epochs
+            lr_increment = (peak_lr - initial_lr) / warmup_steps
+        else:
+            lr = peak_lr
 
         if self.use_wandb:
             wandb.watch(self.model, log_freq=100)
@@ -112,20 +114,20 @@ class LanguageModelTrainer:
             for input_batch, target_batch in self.train_loader:
                 self.optimizer.zero_grad()
                 global_step += 1
-                # Adjust the learning rate based on the current phase (warmup or cosine annealing)
-                if global_step < warmup_steps:
-                    # Linear warmup
-                    lr = initial_lr + global_step * lr_increment  
-                else:
-                    # Cosine annealing after warmup
-                    progress = ((global_step - warmup_steps) / 
-                                (total_training_steps - warmup_steps))
-                    lr = min_lr + (peak_lr - min_lr) * 0.5 * (1 + math.cos(math.pi * progress))
+                if cosine_annealing:
+                    # Adjust the learning rate based on the current phase (warmup or cosine annealing)
+                    if global_step < warmup_steps:
+                        # Linear warmup
+                        lr = initial_lr + global_step * lr_increment  
+                    else:
+                        # Cosine annealing after warmup
+                        progress = ((global_step - warmup_steps) / 
+                                    (total_training_steps - warmup_steps))
+                        lr = min_lr + (peak_lr - min_lr) * 0.5 * (1 + math.cos(math.pi * progress))
 
-                # Apply the calculated learning rate to the optimizer
-                for param_group in self.optimizer.param_groups:
-                    param_group["lr"] = lr
-                track_lrs.append(lr)  # Store the current learning rate
+                    # Apply the calculated learning rate to the optimizer
+                    for param_group in self.optimizer.param_groups:
+                        param_group["lr"] = lr
 
                 loss = self._calc_loss_batch(input_batch, target_batch)
                 loss.backward()
