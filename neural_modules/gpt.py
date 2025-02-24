@@ -79,12 +79,12 @@ class LoopTransformer_concant(LoopTransformer):
         x0 = x
         for idx in range(self.n_iter):
             if idx == 0:
-                initial_x = torch.randn(batch_size, seq_len, self.emb, device=in_idx.device)
-            x = torch.cat([x0, initial_x], dim=-1)
+                next_state = torch.randn(batch_size, seq_len, self.emb, device=in_idx.device)
+            x = torch.cat([x0, next_state], dim=-1)
             x = self.projection(x)
-            initial_x = self.trf_blocks(x)
+            next_state = self.trf_blocks(x)
 
-        x = self.final_norm(initial_x)
+        x = self.final_norm(next_state)
         logits = self.out_head(x)
         return logits
 

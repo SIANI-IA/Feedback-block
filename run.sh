@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dataset
-dataset_name=tiny
+dataset_name=wikitext-103
 context_length=256
 vocab_size=50257
 
@@ -12,7 +12,7 @@ n_heads=12
 n_layers=1
 drop_rate=0.1
 ## Feedback hyperparameters
-n_iter=12
+n_iter=48
 ## SFTransformer hyperparameters
 select_dim=512
 select_heads=4
