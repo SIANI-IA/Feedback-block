@@ -40,7 +40,9 @@ class LoopTransformer(nn.Module):
         self.pos_emb = nn.Embedding(cfg["context_length"], cfg["emb_dim"])
         self.drop_emb = nn.Dropout(cfg["drop_rate"])
 
-        self.trf_blocks = TransformerBlock(cfg)
+        self.trf_blocks = nn.Sequential(
+            *[TransformerBlock(cfg) for _ in range(cfg["n_layers"])]
+        )
 
         self.final_norm = LayerNorm(cfg["emb_dim"])
         self.out_head = nn.Linear(cfg["emb_dim"], cfg["vocab_size"], bias=False)
@@ -52,10 +54,10 @@ class LoopTransformer(nn.Module):
         pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
         x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
         x = self.drop_emb(x)
-        initial_x = x
+        x0 = x
         for _ in range(self.n_iter):
-            x = self.trf_blocks(initial_x)
-            initial_x = initial_x + x # memory connection
+            x = self.trf_blocks(x0)
+            x0 = x0 + x # memory connection
         x = self.final_norm(x) 
         logits = self.out_head(x)
         return logits

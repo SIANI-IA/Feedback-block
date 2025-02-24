@@ -6,10 +6,10 @@ context_length=256
 vocab_size=50257
 
 # transformer architecture
-transformer_type="gpt" # gpt | loop | select | loop_concat
+transformer_type="loop" # gpt | loop | select | loop_concat
 emb_dim=768
 n_heads=12
-n_layers=12
+n_layers=1
 drop_rate=0.1
 ## Feedback hyperparameters
 n_iter=12
@@ -19,11 +19,11 @@ select_heads=4
 temperature=0 
 
 # training hyperparameters
-epochs=10
+epochs=15
 peak_lr=0.001
 weight_decay=0.1
 batch_size=4
-use_wandb=True
+use_wandb=False
 folder_to_save="checkpoints"
 cosine_annealing=False
 num_workers=0
