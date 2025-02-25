@@ -69,7 +69,8 @@ def parse_args():
     f"{args.epochs}epochs_" + \
     f"{args.context_length}context_" + \
     f"{args.n_heads}heads_" + \
-    f"{args.n_layers}layers_"
+    f"{args.n_layers}layers_" + \
+    f"{args.emb_dim}emb"
 
     if args.transformer_type == "loop":
         args.run_name += f"{args.n_iter}iter_"
