@@ -45,10 +45,11 @@ class CycleNavigation:
 
 # Ejemplo de uso
 task = CycleNavigation()
-batch = task.sample_batch(batch_size=256, length=5)
+batch = task.sample_batch(batch_size=5, length=5)
+print(batch)
 print(len(batch))
 print(batch[:5])
-batch = task.sample_batch(batch_size=256, length=5)
+batch = task.sample_batch(batch_size=5, length=5)
 print(len(batch))
 print(batch[:5])
 
