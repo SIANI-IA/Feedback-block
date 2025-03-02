@@ -18,7 +18,7 @@ class CycleNavigation:
     def __init__(self, cycle_length=5):
         self.cycle_length = cycle_length
 
-    def sample_batch(self, batch_size: int, length: int) -> list:
+    def sample_batch(self, amount: int, length: int) -> list:
         """Generates a batch of action sequences and their corresponding final positions.
 
         Args:
@@ -29,28 +29,18 @@ class CycleNavigation:
             list: Each element is a string of format "<actions>=<binary_output>"
         """
         rng = np.random.default_rng()
-        actions = rng.choice([-1, 0, 1], size=(batch_size, length))
+        actions = rng.choice([-1, 0, 1], size=(amount, length))
 
         # Compute final states
         final_states = np.sum(actions, axis=1) % self.cycle_length
 
         # Convert to formatted strings
         formatted_strings = []
-        for i in range(batch_size):
+        for i in range(amount):
             action_str = ''.join(map(str, actions[i]))  # Convert actions to string
             binary_output = format(1 << final_states[i], f'0{self.cycle_length}b')  # One-hot binary
             formatted_strings.append(f"{action_str}={binary_output}")
 
         return formatted_strings
-
-# Ejemplo de uso
-task = CycleNavigation()
-batch = task.sample_batch(batch_size=5, length=5)
-print(batch)
-print(len(batch))
-print(batch[:5])
-batch = task.sample_batch(batch_size=5, length=5)
-print(len(batch))
-print(batch[:5])
 
 
