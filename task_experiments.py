@@ -17,11 +17,13 @@ from utils import generate, get_timestamp, seed_everything, text_to_token_ids, t
 
 from task.regular.cycle_navigation import CycleNavigation
 from task.cs.bucket_sort import BucketSort
+from task.cs.duplicate_string import DuplicateString
 
 
 DATASETS = {
     "cycle_navigation": CycleNavigation,
     "bucket_sort": BucketSort,
+    "duplicate_string": DuplicateString,
 }
 
 MODELS = {
@@ -31,22 +33,22 @@ MODELS = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
-    parser.add_argument("--transformer_type", type=str, default="gpt", choices=MODELS.keys())
-    parser.add_argument("--context_length", type=int, default=11)
+    parser.add_argument("--transformer_type", type=str, default="loop", choices=MODELS.keys())
+    parser.add_argument("--context_length", type=int, default=10)
     parser.add_argument("--emb_dim", type=int, default=768)
     parser.add_argument("--n_heads", type=int, default=12)
-    parser.add_argument("--n_layers", type=int, default=12)
+    parser.add_argument("--n_layers", type=int, default=1)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
     parser.add_argument("--batch_size", type=int, default=128)
     # Feedback transformer hyperparameters
-    parser.add_argument("--n_iter", type=int, default=6)
+    parser.add_argument("--n_iter", type=int, default=12)
     # Task specific hyperparameters
     parser.add_argument("--task_name", type=str, choices=DATASETS.keys())
-    parser.add_argument("--sample", type=int, default=1e5)
+    parser.add_argument("--sample", type=int, default=1000)
 
     # Training hyperparameters
-    parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--epochs", type=int, default=20)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--peak_lr", type=float, default=0.001)
     parser.add_argument("--initial_lr", type=float, default=1e-5)
