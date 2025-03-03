@@ -69,7 +69,7 @@ class LanguageModelTrainer:
         with torch.no_grad():
             token_ids = generate(
                 model=self.model, idx=encoded,
-                max_new_tokens=50, context_size=context_size
+                max_new_tokens=5, context_size=context_size
             )
         decoded_text = token_ids_to_text(token_ids, self.tokenizer)
         print(decoded_text.replace("\n", " "))
