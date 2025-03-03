@@ -58,7 +58,7 @@ class LoopTransformer(nn.Module):
         for _ in range(self.n_iter):
             x = self.trf_blocks(x0)
             x0 = x0 + x # memory connection
-        x = self.final_norm(x) 
+        x = self.final_norm(x0) 
         logits = self.out_head(x)
         return logits
     

@@ -36,7 +36,7 @@ class CycleNavigation:
         
         # Convert to formatted strings
         formatted_strings = [
-            f"{''.join(map(str, actions[i]))}={final_states[i]}"
+            f"{''.join(map(str, actions[i]))}{final_states[i]}"
             for i in range(amount)
         ]
         

@@ -33,14 +33,14 @@ MODELS = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
-    parser.add_argument("--transformer_type", type=str, default="loop", choices=MODELS.keys())
-    parser.add_argument("--context_length", type=int, default=10)
-    parser.add_argument("--emb_dim", type=int, default=768)
-    parser.add_argument("--n_heads", type=int, default=12)
-    parser.add_argument("--n_layers", type=int, default=1)
+    parser.add_argument("--transformer_type", type=str, default="gpt", choices=MODELS.keys())
+    parser.add_argument("--context_length", type=int, default=5)
+    parser.add_argument("--emb_dim", type=int, default=128)
+    parser.add_argument("--n_heads", type=int, default=2)
+    parser.add_argument("--n_layers", type=int, default=12)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
-    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--batch_size", type=int, default=16)
     # Feedback transformer hyperparameters
     parser.add_argument("--n_iter", type=int, default=12)
     # Task specific hyperparameters
@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument("--sample", type=int, default=1000)
 
     # Training hyperparameters
-    parser.add_argument("--epochs", type=int, default=20)
+    parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--peak_lr", type=float, default=0.001)
     parser.add_argument("--initial_lr", type=float, default=1e-5)
@@ -115,7 +115,7 @@ def generate_test(model, tokenizer, df: pd.DataFrame):
                 max_new_tokens=max_tokens, context_size=context_size
             )
         decoded_text = token_ids_to_text(token_ids, tokenizer)
-        res = decoded_text.split("=")[-1]
+        res = decoded_text.split("=")[-1] #TODO: improve this
         if len(res) != 2:
             output.append(res[5:])
             correct.append(target == res[5:])    
@@ -144,6 +144,8 @@ if __name__ == "__main__":
     train_data = task_generator.sample_batch(args.sample, 5)
     val_data = task_generator.sample_batch(val_samples, 5)
     df_test = create_test_dataset(val_data)
+    input_length = len(df_test["input"].iloc[0])
+    target_length = len(df_test["target"].iloc[0])
   
 
     train_loader, tokenizer = create_char_dataloader(
@@ -160,8 +162,10 @@ if __name__ == "__main__":
         num_workers=args.num_workers
     )
 
+
     args.vocab_size = tokenizer.vocab_size()
-    print("Vocabulary size:", args.vocab_size)
+    vocab = tokenizer.chars
+    print("Vocabulary", vocab)
     print("Training data size:", len(train_loader))
     print("Validation data size:", len(val_loader))
 
@@ -187,7 +191,7 @@ if __name__ == "__main__":
         use_wandb=args.use_wandb,
         project_name=args.project_name,
         run_name=args.run_name,
-        max_tokens=df_test["target"].str.len().max()
+        max_tokens=target_length
     )
 
     total_steps  = len(train_loader) * args.epochs
