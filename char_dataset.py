@@ -87,10 +87,3 @@ if __name__ == "__main__":
 
     print("Vocabulario:", tokenizer.chars)
     print("Tamaño del vocabulario:", tokenizer.vocab_size())
-    # Obtener un batch de datos
-    print("Batch de datos:")
-    for batch in dataloader:
-        print(batch)  # Muestra 5 elementos de la lista tokenizados
-        # Decodificar los datos
-        print(tokenizer.decode(batch[0]))  # Decodifica el primer elemento del batch
-        break

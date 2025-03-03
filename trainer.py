@@ -17,6 +17,7 @@ class LanguageModelTrainer:
             use_wandb=False,
             project_name=None,
             run_name=None,
+            max_tokens=50,
         ):
         self.model = model.to(device)
         self.train_loader = train_loader
@@ -26,6 +27,7 @@ class LanguageModelTrainer:
         self.tokenizer = tokenizer
         self.start_context = start_context
         self.use_wandb = use_wandb
+        self.max_tokens = max_tokens
         if self.use_wandb:
             assert project_name is not None and run_name is not None
             wandb.init(project=project_name, name=run_name)
@@ -69,7 +71,7 @@ class LanguageModelTrainer:
         with torch.no_grad():
             token_ids = generate(
                 model=self.model, idx=encoded,
-                max_new_tokens=5, context_size=context_size
+                max_new_tokens=self.max_tokens, context_size=context_size
             )
         decoded_text = token_ids_to_text(token_ids, self.tokenizer)
         print(decoded_text.replace("\n", " "))

@@ -1,46 +1,45 @@
 import numpy as np
 
 class CycleNavigation:
-    """A task with the goal of computing the final state on a circle.
-
-    The input is a sequence of actions, composed of -1s, 0s, or 1s. 
-    The actions indicate movements on a finite-length circle:
-        - 0 means stay,
-        - 1 means move right,
-        - -1 means move left.
-    
-    The agent starts at position 0, and the goal is to compute the final position 
-    on the circle after executing all actions.
-
-    By default, the length of the circle is 5.
     """
-
+    Cycle Navigation (R): Given a sequence of movements on a cycle of length 5,
+    compute the end position. The movements are:
+        - 0: STAY (no movement)
+        - 1: INCREASE (move right)
+        - 2: DECREASE (move left)
+    
+    The agent always starts at position 0. The final position is computed using
+    modular arithmetic.
+    
+    By default, the cycle length is 5.
+    """
+    
     def __init__(self, cycle_length=5):
         self.cycle_length = cycle_length
 
     def sample_batch(self, amount: int, length: int) -> list:
-        """Generates a batch of action sequences and their corresponding final positions.
-
+        """
+        Generates a batch of action sequences and their corresponding final positions.
+        
         Args:
-            batch_size (int): Number of sequences in the batch.
+            amount (int): Number of sequences in the batch.
             length (int): Length of each action sequence.
-
+        
         Returns:
-            list: Each element is a string of format "<actions>=<binary_output>"
+            list: Each element is a string of format "<actions>=<final_position>"
         """
         rng = np.random.default_rng()
-        actions = rng.choice([-1, 0, 1], size=(amount, length))
-
-        # Compute final states
-        final_states = np.sum(actions, axis=1) % self.cycle_length
-
+        actions = rng.choice([0, 1, 2], size=(amount, length))
+        
+        # Compute final positions (treating 2 as -1 for left movement)
+        final_states = np.sum(np.where(actions == 2, -1, actions), axis=1) % self.cycle_length
+        
         # Convert to formatted strings
-        formatted_strings = []
-        for i in range(amount):
-            action_str = ''.join(map(str, actions[i]))  # Convert actions to string
-            binary_output = format(1 << final_states[i], f'0{self.cycle_length}b')  # One-hot binary
-            formatted_strings.append(f"{action_str}={binary_output}")
-
+        formatted_strings = [
+            f"{''.join(map(str, actions[i]))}={final_states[i]}"
+            for i in range(amount)
+        ]
+        
         return formatted_strings
 
 

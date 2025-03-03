@@ -1,15 +1,19 @@
 import argparse
 import json
+from typing import List
+import pandas as pd
 import tiktoken
 import torch
 from distutils.util import strtobool
 import os
 
+import wandb
+
 from char_dataset import create_char_dataloader
 from dataset import create_dataloader
 from neural_modules.gpt import GPTModel, LoopTransformer
 from trainer import LanguageModelTrainer
-from utils import get_timestamp, seed_everything
+from utils import generate, get_timestamp, seed_everything, text_to_token_ids, token_ids_to_text
 
 from task.regular.cycle_navigation import CycleNavigation
 
@@ -26,34 +30,33 @@ MODELS = {
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
     parser.add_argument("--transformer_type", type=str, default="loop", choices=MODELS.keys())
-    parser.add_argument("--context_length", type=int, default=13)
+    parser.add_argument("--context_length", type=int, default=20)
     parser.add_argument("--emb_dim", type=int, default=768)
     parser.add_argument("--n_heads", type=int, default=12)
     parser.add_argument("--n_layers", type=int, default=1)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
-    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=48)
     # Feedback transformer hyperparameters
     parser.add_argument("--n_iter", type=int, default=6)
     # Task specific hyperparameters
     parser.add_argument("--task_name", type=str, choices=DATASETS.keys())
-    parser.add_argument("--sample", type=int, default=100)
+    parser.add_argument("--sample", type=int, default=1e4)
 
     # Training hyperparameters
-    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--epochs", type=int, default=15)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--peak_lr", type=float, default=0.001)
     parser.add_argument("--initial_lr", type=float, default=1e-5)
     parser.add_argument("--min_lr", type=float, default=1e-5)
     parser.add_argument("--weight_decay", type=float, default=0.1)
-    parser.add_argument("--example_sentence", type=str, default="-110-10=")
     parser.add_argument("--use_wandb", type=lambda x: bool(strtobool(x)), default=False)
     parser.add_argument("--folder_to_save", type=str, default="checkpoints")
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--warmup_portion", type=float, default=0.2)
     parser.add_argument("--eval_freq", type=int, default=5)
     parser.add_argument("--eval_iter", type=int, default=1)
-    parser.add_argument("--cosine_annealing", type=lambda x: bool(strtobool(x)), default=True)
+    parser.add_argument("--cosine_annealing", type=lambda x: bool(strtobool(x)), default=False)
     args = parser.parse_args()
     args.sample = int(args.sample)
     args.project_name = f"language-modeling-{args.task_name}"
@@ -77,6 +80,41 @@ def parse_args():
 
     return args
 
+def create_test_dataset(val_data: List[str], sep: str = "=") -> pd.DataFrame:
+    df = {"input": [], "target": []}
+    for text in val_data:
+        parts = text.split(sep)
+        df["input"].append(parts[0] + sep)
+        df["target"].append(parts[1])
+
+    return pd.DataFrame(df)
+
+def calculate_accuracy(preds, target):
+    return (preds == target).sum() / len(target)
+
+def generate_test(model, tokenizer, df: pd.DataFrame):
+    model.eval()
+    max_tokens = df["target"].str.len().max()
+    context_size = model.pos_emb.weight.shape[0]
+
+    output = []
+    correct = []
+    for input, target in zip(df["input"], df["target"]):
+        encoded = text_to_token_ids(input, tokenizer).to(device)
+        with torch.no_grad():
+            token_ids = generate(
+                model=model, idx=encoded,
+                max_new_tokens=max_tokens, context_size=len(encoded)
+            )
+        decoded_text = token_ids_to_text(token_ids, tokenizer)
+        res = decoded_text.split("=")[-1]
+        output.append(res)
+        correct.append(target == res)
+
+    df["output"] = output
+    df["correct"] = correct
+    
+
 #main
 if __name__ == "__main__":
     args = parse_args()
@@ -90,9 +128,11 @@ if __name__ == "__main__":
 
 
     task_generator = DATASETS[args.task_name]()
-    val_samples = args.sample // 10 + 1
-    train_data = task_generator.sample_batch(args.sample, args.context_length)
-    val_data = task_generator.sample_batch(val_samples, args.context_length)
+    val_samples = 100
+    train_data = task_generator.sample_batch(args.sample, 5)
+    val_data = task_generator.sample_batch(val_samples, 5)
+    df_test = create_test_dataset(val_data)
+  
 
     train_loader, tokenizer = create_char_dataloader(
         train_data, 
@@ -131,10 +171,11 @@ if __name__ == "__main__":
         val_loader=val_loader,
         device=device,
         tokenizer=tokenizer,
-        start_context=args.example_sentence,
+        start_context=df_test["input"].iloc[0],
         use_wandb=args.use_wandb,
         project_name=args.project_name,
-        run_name=args.run_name
+        run_name=args.run_name,
+        max_tokens=df_test["target"].str.len().max()
     )
 
     total_steps  = len(train_loader) * args.epochs
@@ -149,6 +190,14 @@ if __name__ == "__main__":
         min_lr=args.min_lr,
         cosine_annealing=args.cosine_annealing
     )
+
+    # Generate test data
+    generate_test(model, tokenizer, df_test)
+    print(df_test)
+    accuracy = calculate_accuracy(df_test["output"], df_test["target"])
+    print(f"Accuracy: {accuracy:.2f}")
+    if args.use_wandb:
+        wandb.log({"accuracy": accuracy})
 
     # Save the model
     # create the folder to save the model
@@ -166,3 +215,6 @@ if __name__ == "__main__":
         json.dump(config, file)
 
     torch.save(model_trained.state_dict(), f"{folder_to_save}/model.pth")
+    # save the df_test
+    df_test.to_csv(f"{folder_to_save}/df_test.csv", index=False)
+    print("Model saved in:", folder_to_save)
