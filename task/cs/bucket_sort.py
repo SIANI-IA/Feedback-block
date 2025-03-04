@@ -11,8 +11,9 @@ class BucketSort:
         Output: "011222344"
     """
     
-    def __init__(self, alphabet_size=5):
+    def __init__(self, alphabet_size: int = 5, seed: int = 42):
         self.alphabet_size = alphabet_size
+        self.rng = np.random.default_rng(seed)
 
     def sort_string(self, input_string: str) -> str:
         """
@@ -44,8 +45,7 @@ class BucketSort:
         Returns:
             list: Each element is a string of format "<input_string>=<sorted_string>"
         """
-        rng = np.random.default_rng()
-        samples = rng.integers(0, self.alphabet_size, size=(amount, length))
+        samples = self.rng.integers(0, self.alphabet_size, size=(amount, length))
         
         formatted_strings = [
             f"{''.join(map(str, sample))}{self.sort_string(''.join(map(str, sample)))}"

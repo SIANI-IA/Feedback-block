@@ -2,15 +2,11 @@ import argparse
 import json
 from typing import List
 import pandas as pd
-import tiktoken
 import torch
 from distutils.util import strtobool
 import os
 
-import wandb
-
 from char_dataset import create_char_dataloader
-from dataset import create_dataloader
 from neural_modules.gpt import GPTModel, LoopTransformer
 from trainer import LanguageModelTrainer
 from utils import generate, get_timestamp, seed_everything, text_to_token_ids, token_ids_to_text
@@ -34,10 +30,10 @@ MODELS = {
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
     parser.add_argument("--transformer_type", type=str, default="gpt", choices=MODELS.keys())
-    parser.add_argument("--context_length", type=int, default=5)
+    parser.add_argument("--context_length", type=int, default=10)
     parser.add_argument("--emb_dim", type=int, default=128)
     parser.add_argument("--n_heads", type=int, default=2)
-    parser.add_argument("--n_layers", type=int, default=12)
+    parser.add_argument("--n_layers", type=int, default=1)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
     parser.add_argument("--batch_size", type=int, default=16)
@@ -45,7 +41,7 @@ def parse_args():
     parser.add_argument("--n_iter", type=int, default=12)
     # Task specific hyperparameters
     parser.add_argument("--task_name", type=str, choices=DATASETS.keys())
-    parser.add_argument("--sample", type=int, default=1000)
+    parser.add_argument("--sample", type=int, default=10000)
 
     # Training hyperparameters
     parser.add_argument("--epochs", type=int, default=10)
@@ -71,26 +67,21 @@ def parse_args():
     f"{args.context_length}context_" + \
     f"{args.n_heads}heads_" + \
     f"{args.n_layers}layers_" + \
-    f"{args.emb_dim}emb"
+    f"{args.emb_dim}emb_"
 
     if args.transformer_type == "loop":
         args.run_name += f"{args.n_iter}iter_"
-    if args.transformer_type == "select":
-        args.run_name += f"{args.n_iter}iter_"
-        args.run_name += f"{args.select_dim}sel_dim_" + \
-        f"{args.select_heads}sel_heads_" + \
-        f"{args.temperature}temp_"
     args.run_name += f"{time_now}"
 
     return args
 
-def create_test_dataset(val_data: List[str], sep: str = "=") -> pd.DataFrame:
+def create_test_dataset(val_data: List[str], seq_lengt: int, sep: str = "=",) -> pd.DataFrame:
     df = {"input": [], "target": []}
     for text in val_data:
         parts = text.split(sep)
         if len(parts) != 2:
-            df["input"].append(text[:5])
-            df["target"].append(text[5:])
+            df["input"].append(text[:seq_lengt])
+            df["target"].append(text[seq_length:])
         else:
             df["input"].append(parts[0] + sep)
             df["target"].append(parts[1])
@@ -100,7 +91,7 @@ def create_test_dataset(val_data: List[str], sep: str = "=") -> pd.DataFrame:
 def calculate_accuracy(preds, target):
     return (preds == target).sum() / len(target)
 
-def generate_test(model, tokenizer, df: pd.DataFrame):
+def generate_test(model, tokenizer, seq_length: int, df: pd.DataFrame):
     model.eval()
     max_tokens = df["target"].str.len().max()
     context_size = model.pos_emb.weight.shape[0]
@@ -117,8 +108,8 @@ def generate_test(model, tokenizer, df: pd.DataFrame):
         decoded_text = token_ids_to_text(token_ids, tokenizer)
         res = decoded_text.split("=")[-1] #TODO: improve this
         if len(res) != 2:
-            output.append(res[5:])
-            correct.append(target == res[5:])    
+            output.append(res[seq_length:])
+            correct.append(target == res[seq_length:])    
         else:
             output.append(res)
             correct.append(target == res)
@@ -138,12 +129,12 @@ if __name__ == "__main__":
 
     seed_everything(args.seed)
 
-
-    task_generator = DATASETS[args.task_name]()
+    task_generator = DATASETS[args.task_name](seed = args.seed)
+    seq_length = args.context_length
     val_samples = 100
-    train_data = task_generator.sample_batch(args.sample, 5)
-    val_data = task_generator.sample_batch(val_samples, 5)
-    df_test = create_test_dataset(val_data)
+    train_data = task_generator.sample_batch(args.sample, seq_length)
+    val_data = task_generator.sample_batch(val_samples, seq_length)
+    df_test = create_test_dataset(val_data, seq_length)
     input_length = len(df_test["input"].iloc[0])
     target_length = len(df_test["target"].iloc[0])
   
@@ -208,12 +199,14 @@ if __name__ == "__main__":
     )
 
     # Generate test data
-    generate_test(model, tokenizer, df_test)
+    generate_test(model, tokenizer, seq_length, df_test)
     print(df_test)
     accuracy = calculate_accuracy(df_test["output"], df_test["target"])
     print(f"Accuracy: {accuracy:.2f}")
     if args.use_wandb:
+        import wandb
         wandb.log({"accuracy": accuracy})
+        wandb.finish()
 
     # Save the model
     # create the folder to save the model

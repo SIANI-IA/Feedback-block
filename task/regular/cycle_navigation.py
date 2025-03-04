@@ -14,8 +14,9 @@ class CycleNavigation:
     By default, the cycle length is 5.
     """
     
-    def __init__(self, cycle_length=5):
+    def __init__(self, cycle_length: int = 5, seed: int = 42):
         self.cycle_length = cycle_length
+        self.rng = np.random.default_rng(seed)
 
     def sample_batch(self, amount: int, length: int) -> list:
         """
@@ -28,8 +29,7 @@ class CycleNavigation:
         Returns:
             list: Each element is a string of format "<actions>=<final_position>"
         """
-        rng = np.random.default_rng()
-        actions = rng.choice([0, 1, 2], size=(amount, length))
+        actions = self.rng.choice([0, 1, 2], size=(amount, length))
         
         # Compute final positions (treating 2 as -1 for left movement)
         final_states = np.sum(np.where(actions == 2, -1, actions), axis=1) % self.cycle_length

@@ -206,7 +206,4 @@ class LanguageModelTrainer:
                         }
                     )
         
-        if self.use_wandb:
-            wandb.finish()
-        
         return self.model

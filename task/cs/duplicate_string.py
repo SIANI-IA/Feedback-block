@@ -11,8 +11,8 @@ class DuplicateString:
     This task is CS since it corresponds to the well-known language {ww | w is a word}.
     """
     
-    def __init__(self):
-        pass
+    def __init__(self, seed: int = 42):
+        self.rng = np.random.default_rng(seed)
 
     def duplicate(self, input_string: str) -> str:
         """
@@ -37,9 +37,8 @@ class DuplicateString:
         Returns:
             list: Each element is a string of format "<input_string>=<duplicated_string>"
         """
-        rng = np.random.default_rng()
         samples = [
-            ''.join(rng.choice(['a', 'b'], size=length)) for _ in range(amount)
+            ''.join(self.rng.choice(['a', 'b'], size=length)) for _ in range(amount)
         ]
         
         formatted_strings = [
@@ -51,4 +50,4 @@ class DuplicateString:
 if __name__ == "__main__":
     # Example usage
     task = DuplicateString()
-    print(task.sample_batch(amount=5, length=5))
+    print(task.sample_batch(amount=5, length=10))
