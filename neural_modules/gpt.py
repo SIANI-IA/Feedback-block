@@ -54,11 +54,11 @@ class LoopTransformer(nn.Module):
         pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
         x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
         x = self.drop_emb(x)
-        x0 = x
+        #x0 = x
         for _ in range(self.n_iter):
-            x = self.trf_blocks(x0)
-            x0 = x0 + x # memory connection
-        x = self.final_norm(x0) 
+            x = self.trf_blocks(x)
+            #x0 = x0 + x # memory connection
+        x = self.final_norm(x) 
         logits = self.out_head(x)
         return logits
     

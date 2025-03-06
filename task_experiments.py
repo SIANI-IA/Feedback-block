@@ -12,14 +12,19 @@ from trainer import LanguageModelTrainer
 from utils import generate, get_timestamp, seed_everything, text_to_token_ids, token_ids_to_text
 
 from task.regular.cycle_navigation import CycleNavigation
+from task.regular.even_pairs import EvenPairs
 from task.cs.bucket_sort import BucketSort
 from task.cs.duplicate_string import DuplicateString
+from task.regular.modular_arithmetic import ModularArithmetic
+
 
 
 DATASETS = {
     "cycle_navigation": CycleNavigation,
     "bucket_sort": BucketSort,
     "duplicate_string": DuplicateString,
+    "even_pairs": EvenPairs,
+    "modular_arithmetic": ModularArithmetic,
 }
 
 MODELS = {
@@ -30,15 +35,15 @@ MODELS = {
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
     parser.add_argument("--transformer_type", type=str, default="gpt", choices=MODELS.keys())
-    parser.add_argument("--context_length", type=int, default=10)
-    parser.add_argument("--emb_dim", type=int, default=128)
-    parser.add_argument("--n_heads", type=int, default=2)
-    parser.add_argument("--n_layers", type=int, default=1)
+    parser.add_argument("--context_length", type=int, default=5)
+    parser.add_argument("--emb_dim", type=int, default=768)
+    parser.add_argument("--n_heads", type=int, default=12)
+    parser.add_argument("--n_layers", type=int, default=12)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
     parser.add_argument("--batch_size", type=int, default=16)
     # Feedback transformer hyperparameters
-    parser.add_argument("--n_iter", type=int, default=12)
+    parser.add_argument("--n_iter", type=int, default=3)
     # Task specific hyperparameters
     parser.add_argument("--task_name", type=str, choices=DATASETS.keys())
     parser.add_argument("--sample", type=int, default=10000)
@@ -78,11 +83,11 @@ def parse_args():
 def create_test_dataset(val_data: List[str], seq_lengt: int, sep: str = "=",) -> pd.DataFrame:
     df = {"input": [], "target": []}
     for text in val_data:
-        parts = text.split(sep)
-        if len(parts) != 2:
+        if sep not in text:
             df["input"].append(text[:seq_lengt])
             df["target"].append(text[seq_length:])
         else:
+            parts = text.split(sep)
             df["input"].append(parts[0] + sep)
             df["target"].append(parts[1])
 
@@ -106,11 +111,11 @@ def generate_test(model, tokenizer, seq_length: int, df: pd.DataFrame):
                 max_new_tokens=max_tokens, context_size=context_size
             )
         decoded_text = token_ids_to_text(token_ids, tokenizer)
-        res = decoded_text.split("=")[-1] #TODO: improve this
-        if len(res) != 2:
+        if "=" not in decoded_text:
             output.append(res[seq_length:])
             correct.append(target == res[seq_length:])    
         else:
+            res = decoded_text.split("=")[-1] #TODO: improve this
             output.append(res)
             correct.append(target == res)
 
