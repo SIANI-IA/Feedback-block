@@ -62,6 +62,74 @@ class LoopTransformer(nn.Module):
         logits = self.out_head(x)
         return logits
     
+class LoopTransformerMemory(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.vocab_size = cfg["vocab_size"]
+        self.emb_dim = cfg["emb_dim"]
+        self.context_length = cfg["context_length"]
+        self.n_layers = cfg["n_layers"]
+        self.n_iter = cfg["n_iter"]
+        self.drop_rate = cfg["drop_rate"]
+        
+        self.num_mem_tokens = cfg.get("num_mem_tokens", 5)  # número de tokens de memoria
+        
+        self.tok_emb = nn.Embedding(self.vocab_size, self.emb_dim)
+        self.pos_emb = nn.Embedding(self.context_length, self.emb_dim)
+        
+        # "tokens de memoria" aprendibles:
+        self.mem_emb = nn.Parameter(torch.randn(self.num_mem_tokens, self.emb_dim))
+        
+        self.drop_emb = nn.Dropout(self.drop_rate)
+        self.trf_blocks = nn.Sequential(
+            *[TransformerBlock(cfg) for _ in range(self.n_layers)]
+        )
+        self.final_norm = LayerNorm(self.emb_dim)
+        self.out_head = nn.Linear(self.emb_dim, self.vocab_size, bias=False)
+        self.mem_state = None
+
+    def forward(self, in_idx):
+        """
+        in_idx: [batch_size, seq_len]
+        mem_state: Opcionalmente, podrías pasar la memoria de la iteración anterior
+                   (si quieres que sea 'persistente' entre forwards).
+        """
+        batch_size, seq_len = in_idx.shape
+
+        # 1. Calcular embeddings de entrada
+        tok_embeds = self.tok_emb(in_idx)
+        pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
+        x = tok_embeds + pos_embeds  # [batch_size, seq_len, emb_dim]
+        x = self.drop_emb(x)
+        
+        # 2. Preparar (o inicializar) los tokens de memoria
+        #    Si quieres que la memoria persista entre llamadas forward, 
+        #    podrías recibir mem_state y usarlo aquí en vez de self.mem_emb
+        if self.mem_state is None:
+            mem_tokens = self.mem_emb.unsqueeze(0).expand(batch_size, -1, -1)
+        else:
+            mem_tokens = self.mem_state  # [batch_size, num_mem_tokens, emb_dim]
+        
+        # 3. Concatenar los tokens de memoria a la secuencia
+        #    Dim resultante: [batch_size, seq_len + num_mem_tokens, emb_dim]
+        x = torch.cat([mem_tokens, x], dim=1)
+
+        # 4. "Loop recurrente" sobre las capas de Transformer
+        for _ in range(self.n_iter):
+            x = self.trf_blocks(x)
+        
+        # 5. Extraemos la parte de la memoria (para el próximo forward, si se desea)
+        new_mem_state = x[:, :self.num_mem_tokens, :]  # [batch_size, num_mem_tokens, emb_dim]
+        
+        # Y la parte correspondiente a los tokens "reales" (sin contar mem-tokens)
+        x_tokens = x[:, self.num_mem_tokens:, :]
+        
+        x_tokens = self.final_norm(x_tokens)
+        logits = self.out_head(x_tokens)  # [batch_size, seq_len, vocab_size]
+
+        return logits
+
+    
 class LoopTransformer_concant(LoopTransformer):
     
     def __init__(self, cfg):
@@ -145,16 +213,16 @@ class SFTFormer(nn.Module):
         x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
         x = self.drop_emb(x)
         ###############################
-        initial_x = x
+        #initial_x = x
         for _ in range(self.n_iter):
-            probs_block = self.selector(initial_x)
+            probs_block = self.selector(x)
             if self.temperature > 0.0:
                 choosen_block = torch.multinomial(probs_block, num_samples=1)
             else:
                 choosen_block = torch.argmax(probs_block, dim=-1) # greedy selection
             self.histogram_of_chosen_blocks[choosen_block.item()] += 1
-            x = self.trf_blocks[choosen_block](initial_x)
-            initial_x = initial_x + x # memory connection
+            x = self.trf_blocks[choosen_block](x)
+            #initial_x = initial_x + x # memory connection
         ###############################
         x = self.final_norm(x)
         logits = self.out_head(x)

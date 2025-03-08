@@ -7,7 +7,7 @@ from distutils.util import strtobool
 import os
 
 from char_dataset import create_char_dataloader
-from neural_modules.gpt import GPTModel, LoopTransformer
+from neural_modules.gpt import GPTModel, LoopTransformer, LoopTransformerMemory
 from trainer import LanguageModelTrainer
 from utils import generate, get_timestamp, seed_everything, text_to_token_ids, token_ids_to_text
 
@@ -30,6 +30,7 @@ DATASETS = {
 MODELS = {
     "gpt": GPTModel,
     "loop": LoopTransformer,
+    "loop_memory": LoopTransformerMemory,
 }
 
 def parse_args():
@@ -43,10 +44,10 @@ def parse_args():
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
     parser.add_argument("--batch_size", type=int, default=16)
     # Feedback transformer hyperparameters
-    parser.add_argument("--n_iter", type=int, default=3)
+    parser.add_argument("--n_iter", type=int, default=12)
     # Task specific hyperparameters
     parser.add_argument("--task_name", type=str, choices=DATASETS.keys())
-    parser.add_argument("--sample", type=int, default=10000)
+    parser.add_argument("--sample", type=int, default=1000)
 
     # Training hyperparameters
     parser.add_argument("--epochs", type=int, default=10)
@@ -112,8 +113,8 @@ def generate_test(model, tokenizer, seq_length: int, df: pd.DataFrame):
             )
         decoded_text = token_ids_to_text(token_ids, tokenizer)
         if "=" not in decoded_text:
-            output.append(res[seq_length:])
-            correct.append(target == res[seq_length:])    
+            output.append(decoded_text[seq_length:])
+            correct.append(target == decoded_text[seq_length:])    
         else:
             res = decoded_text.split("=")[-1] #TODO: improve this
             output.append(res)
