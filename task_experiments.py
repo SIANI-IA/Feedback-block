@@ -7,7 +7,7 @@ from distutils.util import strtobool
 import os
 
 from char_dataset import create_char_dataloader
-from neural_modules.gpt import GPTModel, LoopTransformer, LoopTransformerMemory
+from neural_modules.gpt import GPTModel, LoopTransformer, LoopTransformerMemory, LoopTransformer_concant
 from trainer import LanguageModelTrainer
 from utils import generate, get_timestamp, seed_everything, text_to_token_ids, token_ids_to_text
 
@@ -31,6 +31,7 @@ MODELS = {
     "gpt": GPTModel,
     "loop": LoopTransformer,
     "loop_memory": LoopTransformerMemory,
+    "loop_concat": LoopTransformer_concant,
 }
 
 def parse_args():
@@ -39,7 +40,7 @@ def parse_args():
     parser.add_argument("--context_length", type=int, default=5)
     parser.add_argument("--emb_dim", type=int, default=768)
     parser.add_argument("--n_heads", type=int, default=12)
-    parser.add_argument("--n_layers", type=int, default=12)
+    parser.add_argument("--n_layers", type=int, default=1)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
     parser.add_argument("--batch_size", type=int, default=16)
@@ -148,6 +149,7 @@ if __name__ == "__main__":
     train_loader, tokenizer = create_char_dataloader(
         train_data, 
         batch_size=args.batch_size,
+        max_length=seq_length,
         shuffle=True,
         num_workers=args.num_workers
     )
@@ -155,6 +157,7 @@ if __name__ == "__main__":
     val_loader, _ = create_char_dataloader(
         val_data, 
         batch_size=args.batch_size,
+        max_length=seq_length,
         shuffle=False,
         num_workers=args.num_workers
     )

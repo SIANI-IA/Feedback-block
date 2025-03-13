@@ -48,13 +48,16 @@ if __name__ == "__main__":
         file_path = "the-verdict.txt"
         urllib.request.urlretrieve(url, file_path)"""
     
-    from datasets import load_from_disk
+    import numpy as np
 
-    dataset = load_from_disk("data/pretrain/wikitext-2")
+    num_points = 15
 
-    print(len("".join(dataset["train"]["text"][:])))
+    log_seq = np.logspace(np.log10(5), np.log10(100), num=num_points)
 
-    print(dataset)
+    log_seq = np.round(log_seq).astype(int)
+
+    print(log_seq)
+
 
 
 
