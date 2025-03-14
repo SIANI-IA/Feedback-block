@@ -50,7 +50,7 @@ if __name__ == "__main__":
     
     import numpy as np
 
-    num_points = 15
+    num_points = 20
 
     log_seq = np.logspace(np.log10(5), np.log10(100), num=num_points)
 

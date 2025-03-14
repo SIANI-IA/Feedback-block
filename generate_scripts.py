@@ -1,25 +1,28 @@
 import os
 import itertools
+import numpy as np
 
 # Constants that remain the same for all scripts
-EMB_DIM = [32, 64]
-N_HEADS = [1, 2, 4, 8]
+MODELS  = ["gpt", "loop"]
 LAYERS  = [1, 3, 6, 12]
+TASK_NAME = ["cycle_navigation", "bucket_sort", "duplicate_string", "even_pairs", "modular_arithmetic"]
+
+def get_log_distrubution(num_points: int, start: int, end: int) -> np.ndarray:
+    log_seq = np.logspace(np.log10(start), np.log10(end), num=num_points)
+    log_seq = np.round(log_seq).astype(int)
+    return log_seq
+
+CONTEXT_LENGTH = get_log_distrubution(20, 5, 100).tolist()
 
 parms = {
     "context_length": 256,
-    "dataset_name":"wikitext-103",
-    "vocab_size": 50257,
     "transformer_type": "gpt",
     "emb_dim": 768,
     "n_heads": 12,
     "n_layers": 12,
     "drop_rate": 0.1,
     "n_iter": 0,
-    "select_dim": 0,
-    "select_heads": 0,
-    "temperature": 0,
-    "epochs": 1,
+    "epochs": 10,
     "peak_lr": 0.001,
     "weight_decay": 0.1,
     "batch_size": 68,
@@ -28,15 +31,16 @@ parms = {
     "num_workers": 5,
     "warmup_portion": 0.2,
     "eval_freq": 5,
-    "eval_iter": 1
+    "eval_iter": 1,
+    "sample": 5000,
 }
 
 def define_scripts(config: dict) -> str:
     bash_script = f"""#!/bin/bash
 # Dataset
-dataset_name="{config['dataset_name']}"
+task_name="{config['task_name']}"
 context_length={config['context_length']}
-vocab_size={config['vocab_size']}
+sample={config['sample']}
 
 # transformer architecture
 transformer_type="{config['transformer_type']}"
@@ -46,10 +50,6 @@ n_layers={config['n_layers']}
 drop_rate={config['drop_rate']}
 ## Feedback hyperparameters
 n_iter={config['n_iter']}
-## SFTransformer hyperparameters
-select_dim={config['select_dim']}
-select_heads={config['select_heads']}
-temperature={config['temperature']}
 
 # training hyperparameters
 epochs={config['epochs']}
@@ -63,8 +63,8 @@ warmup_portion={config['warmup_portion']}
 eval_freq={config['eval_freq']}
 eval_iter={config['eval_iter']}
 
-python3 main.py \
-    --vocab_size $vocab_size \
+python3 task_experiments.py \
+    --sample $sample \
     --context_length $context_length \
     --emb_dim $emb_dim \
     --n_heads $n_heads \
@@ -72,11 +72,8 @@ python3 main.py \
     --drop_rate $drop_rate \
     --batch_size $batch_size \
     --n_iter $n_iter \
-    --select_dim $select_dim \
-    --select_heads $select_heads \
-    --temperature $temperature \
     --epochs $epochs \
-    --dataset_name $dataset_name \
+    --task_name $task_name \
     --transformer_type $transformer_type \
     --peak_lr $peak_lr \
     --weight_decay $weight_decay \
@@ -101,14 +98,22 @@ def save_script(script_filename: str, bash_script: str) -> None:
 # Create an output directory for the scripts
 output_dir = "scripts"
 os.makedirs(output_dir, exist_ok=True)
+iterations = itertools.product(LAYERS, MODELS, CONTEXT_LENGTH, TASK_NAME)
 
 # Generate a script for each combination of model, PEFT type, and dataset
-for i, (dim, head, layer) in enumerate(itertools.product(EMB_DIM, N_HEADS, LAYERS)):
+for i, (layer, model, context, task) in enumerate(iterations):
     # Define the script
     script_filename  = os.path.join(output_dir, f"train_{i+1}.sh")
-    parms["emb_dim"] = dim
-    parms["n_heads"] = head
-    parms["n_layers"] = layer
+    parms["task_name"] = task
+    parms["context_length"] = context
+    parms["transformer_type"] = model
+    if model == "gpt":
+        parms["n_layers"] = layer
+    else:
+        if layer == 1:
+            continue
+        parms["n_layers"] = 1
+        parms["n_iter"] = layer
     bash_script = define_scripts(parms)
 
     # Save the script

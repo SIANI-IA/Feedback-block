@@ -215,6 +215,7 @@ if __name__ == "__main__":
     if args.use_wandb:
         import wandb
         wandb.log({"accuracy": accuracy})
+        wandb.log({"seq_length": seq_length})
         wandb.finish()
 
     # Save the model
