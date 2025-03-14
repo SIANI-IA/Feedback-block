@@ -4,7 +4,7 @@ import wandb
 
 from utils import generate, transform_big_integers_to_human_reable, text_to_token_ids, token_ids_to_text
 
-class LanguageModelTrainer:
+class LanguageModelingTrainer:
     def __init__(
             self, 
             model, 

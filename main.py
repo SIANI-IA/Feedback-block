@@ -8,7 +8,7 @@ import os
 from dataset import create_dataloader
 from dataset_splitter.TxtDatasetSplitter import TxtDatasetSplitter
 from neural_modules.gpt import GPTModel, LoopTransformer, SFTFormer, LoopTransformer_concant
-from trainer import LanguageModelTrainer
+from trainer import LanguageModelingTrainer
 from utils import get_timestamp, seed_everything
 from dataset_splitter.WikiDatasetSplitter import WikiDatasetSplitter
 
@@ -132,7 +132,7 @@ tokenizer = tiktoken.get_encoding(args.tokenizer_name)
 print("Training data size:", len(train_loader))
 print("Validation data size:", len(val_loader))
 
-trainer = LanguageModelTrainer(
+trainer = LanguageModelingTrainer(
     model=model,
     optimizer=optimizer,
     train_loader=train_loader,
@@ -174,3 +174,7 @@ with open(f"{folder_to_save}/config.json", "w") as file:
     json.dump(config, file)
 
 torch.save(model_trained.state_dict(), f"{folder_to_save}/model.pth")
+
+if args.use_wandb:
+    import wandb
+    wandb.finish()

@@ -8,7 +8,7 @@ import os
 
 from char_dataset import create_char_dataloader
 from neural_modules.gpt import GPTModel, LoopTransformer, LoopTransformerMemory, LoopTransformer_concant
-from trainer import LanguageModelTrainer
+from trainer import LanguageModelingTrainer
 from utils import generate, get_timestamp, seed_everything, text_to_token_ids, token_ids_to_text
 
 from task.regular.cycle_navigation import CycleNavigation
@@ -180,7 +180,7 @@ if __name__ == "__main__":
         weight_decay=args.weight_decay
     )
 
-    trainer = LanguageModelTrainer(
+    trainer = LanguageModelingTrainer(
         model=model,
         optimizer=optimizer,
         train_loader=train_loader,
