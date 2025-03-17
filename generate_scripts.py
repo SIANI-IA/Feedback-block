@@ -38,6 +38,7 @@ parms = {
 def define_scripts(config: dict) -> str:
     bash_script = f"""#!/bin/bash
 # Dataset
+export WANDB_MODE=offline
 task_name="{config['task_name']}"
 context_length={config['context_length']}
 sample={config['sample']}
