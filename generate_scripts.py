@@ -4,7 +4,7 @@ import numpy as np
 
 # Constants that remain the same for all scripts
 MODELS  = ["gpt", "loop"]
-LAYERS  = [1, 3, 6, 12]
+LAYERS  = [1, 12]
 TASK_NAME = ["cycle_navigation", "even_pairs"]
 
 def get_log_distrubution(num_points: int, start: int, end: int) -> np.ndarray:
@@ -25,10 +25,10 @@ parms = {
     "epochs": 10,
     "peak_lr": 0.001,
     "weight_decay": 0.1,
-    "batch_size": 68,
+    "batch_size": 256,
     "use_wandb": True,
     "folder_to_save": "checkpoints",
-    "num_workers": 5,
+    "num_workers": 0,
     "warmup_portion": 0.2,
     "eval_freq": 5,
     "eval_iter": 1,
