@@ -25,5 +25,5 @@ for SCRIPT in "$SCRIPTS_DIR"/*.sh; do
         rm -f "$SCRIPT"
     fi
 # Esperar antes de volver a revisar si hay nuevos scripts (opcional)
-sleep 2
+sleep 5
 done
