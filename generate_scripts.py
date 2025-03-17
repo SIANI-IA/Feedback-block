@@ -15,7 +15,7 @@ def get_log_distrubution(num_points: int, start: int, end: int) -> np.ndarray:
 CONTEXT_LENGTH = get_log_distrubution(10, 5, 100).tolist()
 
 parms = {
-    "context_length": 256,
+    "context_length": 68,
     "transformer_type": "gpt",
     "emb_dim": 768,
     "n_heads": 12,
@@ -25,14 +25,14 @@ parms = {
     "epochs": 10,
     "peak_lr": 0.001,
     "weight_decay": 0.1,
-    "batch_size": 256,
+    "batch_size": 68,
     "use_wandb": True,
     "folder_to_save": "checkpoints",
     "num_workers": 0,
     "warmup_portion": 0.2,
     "eval_freq": 5,
     "eval_iter": 1,
-    "sample": 5000,
+    "sample": 1000,
 }
 
 def define_scripts(config: dict) -> str:
