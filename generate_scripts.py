@@ -5,14 +5,14 @@ import numpy as np
 # Constants that remain the same for all scripts
 MODELS  = ["gpt", "loop"]
 LAYERS  = [1, 3, 6, 12]
-TASK_NAME = ["cycle_navigation", "bucket_sort", "duplicate_string", "even_pairs", "modular_arithmetic"]
+TASK_NAME = ["cycle_navigation", "even_pairs"]
 
 def get_log_distrubution(num_points: int, start: int, end: int) -> np.ndarray:
     log_seq = np.logspace(np.log10(start), np.log10(end), num=num_points)
     log_seq = np.round(log_seq).astype(int)
     return log_seq
 
-CONTEXT_LENGTH = get_log_distrubution(20, 5, 100).tolist()
+CONTEXT_LENGTH = get_log_distrubution(10, 5, 100).tolist()
 
 parms = {
     "context_length": 256,
