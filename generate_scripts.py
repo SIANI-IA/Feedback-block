@@ -17,8 +17,8 @@ CONTEXT_LENGTH = get_log_distrubution(10, 5, 100).tolist()
 parms = {
     "context_length": 68,
     "transformer_type": "gpt",
-    "emb_dim": 768,
-    "n_heads": 12,
+    "emb_dim": 128,
+    "n_heads": 2,
     "n_layers": 12,
     "drop_rate": 0.1,
     "n_iter": 0,
