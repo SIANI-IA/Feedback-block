@@ -62,10 +62,10 @@ class LoopTransformer(nn.Module):
         pos_embeds = self.pos_emb(torch.arange(seq_len, device=in_idx.device))
         x = tok_embeds + pos_embeds  # Shape [batch_size, num_tokens, emb_size]
         x = self.drop_emb(x)
-        #x0 = x
+        x0 = x
         for _ in range(self.n_iter):
             x = self.trf_blocks(x)
-            #x0 = x0 + x # memory connection
+            x = x0 + x # memory connection
         x = self.final_norm(x) 
         logits = self.out_head(x)
         return logits
@@ -146,6 +146,7 @@ class LoopTransformer_concant(LoopTransformer):
         self.projection = nn.Linear(cfg["emb_dim"]*2, cfg["emb_dim"], bias=False)
         self.init_transformer = TransformerBlock(cfg)
         self.final_transformer = TransformerBlock(cfg)
+        self.sigma = 0.1
 
     def forward(self, in_idx):
         batch_size, seq_len = in_idx.shape
@@ -155,14 +156,14 @@ class LoopTransformer_concant(LoopTransformer):
         x = self.drop_emb(x)
         x = self.init_transformer(x)
         x0 = x
-        for idx in range(self.n_iter):
-            if idx == 0:
-                next_state = torch.randn(batch_size, seq_len, self.emb, device=in_idx.device)
-            x = torch.cat([x0, next_state], dim=-1)
-            x = self.projection(x)
-            next_state = self.trf_blocks(x)
+        h = self.sigma * torch.randn(batch_size, seq_len, self.emb, device=x.device)
+        for _ in range(self.n_iter):
+            #x = torch.cat([x0, h], dim=-1)
+            x = h+x0
+            #x = self.projection(x)
+            h = self.trf_blocks(x)
         x = self.final_transformer(x)
-        x = self.final_norm(next_state)
+        x = self.final_norm(h)
         logits = self.out_head(x)
         return logits
 

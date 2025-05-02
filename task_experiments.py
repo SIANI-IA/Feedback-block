@@ -36,19 +36,19 @@ MODELS = {
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
-    parser.add_argument("--transformer_type", type=str, default="gpt", choices=MODELS.keys())
-    parser.add_argument("--context_length", type=int, default=5)
+    parser.add_argument("--transformer_type", type=str, default="loop_concat", choices=MODELS.keys())
+    parser.add_argument("--context_length", type=int, default=64)
     parser.add_argument("--emb_dim", type=int, default=768)
     parser.add_argument("--n_heads", type=int, default=12)
     parser.add_argument("--n_layers", type=int, default=1)
     parser.add_argument("--drop_rate", type=float, default=0.1)
     parser.add_argument("--qkv_bias", type=lambda x: bool(strtobool(x)), default=False)
-    parser.add_argument("--batch_size", type=int, default=16)
+    parser.add_argument("--batch_size", type=int, default=128)
     # Feedback transformer hyperparameters
     parser.add_argument("--n_iter", type=int, default=12)
     # Task specific hyperparameters
     parser.add_argument("--task_name", type=str, choices=DATASETS.keys())
-    parser.add_argument("--sample", type=int, default=1000)
+    parser.add_argument("--sample", type=int, default=10000)
 
     # Training hyperparameters
     parser.add_argument("--epochs", type=int, default=10)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     assert args.transformer_type in MODELS, f"Invalid transformer type: {args.transformer_type}"
-    assert args.task_name in DATASETS, f"Invalid dataset name: {args.dataset_name}"
+    assert args.task_name in DATASETS, f"Invalid dataset name: {args.task_name}"
     assert args.num_workers >= 0, "Number of workers must be non-negative"
     assert 0 < args.warmup_portion <= 1, "Warmup portion must be between 0 and 1"
 
@@ -139,8 +139,11 @@ if __name__ == "__main__":
     task_generator = DATASETS[args.task_name](seed = args.seed)
     seq_length = args.context_length
     val_samples = 100
-    train_data = task_generator.sample_batch(args.sample, seq_length)
-    val_data = task_generator.sample_batch(val_samples, seq_length)
+    # 90% train, 10% validation
+    train_data_sample = int(0.9 * args.sample)
+    test_data_sample = int(0.1 * args.sample)
+    train_data = task_generator.sample_batch(train_data_sample, seq_length)
+    val_data = task_generator.sample_batch(test_data_sample, seq_length)
     df_test = create_test_dataset(val_data, seq_length)
     input_length = len(df_test["input"].iloc[0])
     target_length = len(df_test["target"].iloc[0])

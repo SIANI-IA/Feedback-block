@@ -2,7 +2,7 @@
 
 # Ruta donde están los scripts que quieres ejecutar
 chmod +x scripts/*.sh
-
+export WANDB_MODE=offline
 SCRIPTS_DIR="./scripts"
 LOG_DIR="./logs"
 
