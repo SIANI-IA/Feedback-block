@@ -15,3 +15,17 @@ class FeedForward(nn.Module):
 
     def forward(self, x):
         return self.layers(x)
+    
+class AnisotropicFeedForward(nn.Module):
+    def __init__(self, cfg):
+        super().__init__()
+        self.up_layer = nn.Linear(cfg["emb_dim"], 4*cfg["emb_dim"])
+        self.down_layer = nn.Linear(2*cfg["emb_dim"], cfg["emb_dim"])
+        self.cfg = cfg
+
+    def forward(self, x):
+        x = self.up_layer(x)
+        x1, x2 = torch.chunk(x, 2, dim=2)
+        x = x1 * torch.tanh(x2)
+        x = self.down_layer(x)
+        return x

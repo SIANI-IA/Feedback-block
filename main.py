@@ -7,7 +7,7 @@ import os
 
 from dataset import create_dataloader
 from dataset_splitter.TxtDatasetSplitter import TxtDatasetSplitter
-from neural_modules.gpt import GPTModel, LoopTransformer, SFTFormer, LoopTransformer_concant
+from neural_modules.gpt import GPTModel, LoopTransformer, SFTFormer, LoopTransformer_concant, AnisotropicGPTModel
 from trainer import LanguageModelingTrainer
 from utils import get_timestamp, seed_everything
 from dataset_splitter.WikiDatasetSplitter import WikiDatasetSplitter
@@ -21,6 +21,7 @@ DATASETS = {
 
 MODELS = {
     "gpt": GPTModel,
+    "anisotropic": AnisotropicGPTModel,
     "loop": LoopTransformer,
     "loop_concat": LoopTransformer_concant,
     "select": SFTFormer,
@@ -29,7 +30,7 @@ MODELS = {
 def parse_args():
     parser = argparse.ArgumentParser(description="Train a language model with hyperparameters from CLI.")
     parser.add_argument("--vocab_size", type=int, default=50257)
-    parser.add_argument("--transformer_type", type=str, default="gpt", choices=MODELS.keys())
+    parser.add_argument("--transformer_type", type=str, default="anisotropic", choices=MODELS.keys())
     parser.add_argument("--context_length", type=int, default=256)
     parser.add_argument("--emb_dim", type=int, default=768)
     parser.add_argument("--n_heads", type=int, default=12)
@@ -47,7 +48,7 @@ def parse_args():
     # Training hyperparameters
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--seed", type=int, default=123)
-    parser.add_argument("--dataset_name", type=str, default="tiny", choices=DATASETS.keys())
+    parser.add_argument("--dataset_name", type=str, default="wikitext-2", choices=DATASETS.keys())
     parser.add_argument("--tokenizer_name", type=str, default="gpt2")
     parser.add_argument("--peak_lr", type=float, default=0.001)
     parser.add_argument("--initial_lr", type=float, default=1e-5)

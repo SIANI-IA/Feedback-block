@@ -48,17 +48,20 @@ if __name__ == "__main__":
         file_path = "the-verdict.txt"
         urllib.request.urlretrieve(url, file_path)"""
     
-    import numpy as np
+    n = 64
+    m = 512
+    d = 768
+    x = torch.randn(n, m, d)
 
-    num_points = 20
+    x1, x2 = torch.chunk(x, 2, dim=1)
 
-    log_seq = np.logspace(np.log10(5), np.log10(100), num=num_points)
+    print(x1.shape)  # torch.Size([64, 256, 768])
+    print(x2.shape)  # torch.Size([64, 256, 768])
 
-    log_seq = np.round(log_seq).astype(int)
-
-    print(log_seq)
-
+    x1_sigmoid = torch.sigmoid(x1)
 
 
+    result = x1_sigmoid * x2
 
+    print(result.shape)  # torch.Size([64, 256, 768])
 

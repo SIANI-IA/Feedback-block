@@ -12,7 +12,7 @@ datasets = {
     }
 }
 
-name_dataset = "wikitext-103"
+name_dataset = "wikitext-2"
 assert name_dataset in datasets, f"Dataset {name_dataset} not found"
 folder_cache = os.path.join("data", "pretrain", "cache")
 folder_data = os.path.join("data", "pretrain", name_dataset)

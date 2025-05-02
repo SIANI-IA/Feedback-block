@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from neural_modules.layer_norm import LayerNorm
-from neural_modules.transformer_block import TransformerBlock
+from neural_modules.transformer_block import TransformerBlock, AnisotropicTransformerBlock
 from neural_modules.selector import BlockSelector
 
 
@@ -31,6 +31,14 @@ class GPTModel(nn.Module):
         x = self.final_norm(x)
         logits = self.out_head(x)
         return logits
+    
+class AnisotropicGPTModel(GPTModel):
+
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.trf_blocks = nn.Sequential(
+            *[AnisotropicTransformerBlock(cfg) for _ in range(cfg["n_layers"])]
+        )
     
 class LoopTransformer(nn.Module):
 

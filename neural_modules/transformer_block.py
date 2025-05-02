@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from neural_modules.feed_forward import FeedForward
+from neural_modules.feed_forward import FeedForward, AnisotropicFeedForward
 from neural_modules.layer_norm import LayerNorm
 from neural_modules.multi_head_attn import MultiHeadAttention, MHAPyTorchScaledDotProduct
 
@@ -37,3 +37,8 @@ class TransformerBlock(nn.Module):
         x = self.drop_shortcut(x)
         x = x + shortcut  # Add the original input back
         return x
+    
+class AnisotropicTransformerBlock(TransformerBlock):
+    def __init__(self, cfg):
+        super().__init__(cfg)
+        self.ff = AnisotropicFeedForward(cfg)
