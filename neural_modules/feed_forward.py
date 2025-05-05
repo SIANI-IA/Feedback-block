@@ -26,6 +26,6 @@ class AnisotropicFeedForward(nn.Module):
     def forward(self, x):
         x = self.up_layer(x)
         x1, x2 = torch.chunk(x, 2, dim=2)
-        x = x1 * torch.tanh(x2)
+        x = x1 * torch.sigmoid(x2)
         x = self.down_layer(x)
         return x

@@ -14,7 +14,7 @@ from dataset_splitter.WikiDatasetSplitter import WikiDatasetSplitter
 
 
 DATASETS = {
-    "tiny": TxtDatasetSplitter("data/pretrain/the-verdict.txt"),
+    #"tiny": TxtDatasetSplitter("data/pretrain/the-verdict.txt"),
     "wikitext-2": WikiDatasetSplitter("data/pretrain/wikitext-2"),
     "wikitext-103": WikiDatasetSplitter("data/pretrain/wikitext-103"),
 }
@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument("--temperature", type=float, default=2)
 
     # Training hyperparameters
-    parser.add_argument("--epochs", type=int, default=3)
+    parser.add_argument("--epochs", type=int, default=1)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--dataset_name", type=str, default="wikitext-2", choices=DATASETS.keys())
     parser.add_argument("--tokenizer_name", type=str, default="gpt2")
@@ -104,6 +104,8 @@ optimizer = torch.optim.AdamW(
     lr=args.peak_lr, 
     weight_decay=args.weight_decay
 )
+
+print(args.dataset_name)
 
 dataset    = DATASETS[args.dataset_name]
 train_data = dataset.get_train_data()
